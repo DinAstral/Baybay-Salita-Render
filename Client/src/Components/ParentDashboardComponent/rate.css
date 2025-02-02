@@ -1,0 +1,40 @@
+
+.rate-form {
+    margin: 60px 0;
+    padding: 10x;
+    width: 100%;
+    max-width: 1000px;
+  }
+  
+  .rating-section, .comment-section {
+    margin-bottom: 20px;
+  }
+  
+  .star-rating {
+    display: flex;
+  }
+  
+  .star-icon {
+    font-size: 2rem;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  
+  .comment-box {
+    width: 100%;
+    padding: 10px;
+    border-radius: 4px;
+  }
+  
+  .submit-button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .submit-button:hover {
+    background-color: #0056b3;
+  }

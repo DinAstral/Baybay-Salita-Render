@@ -1,0 +1,122 @@
+.contact {
+    margin: 80px auto;
+    max-width: 90%;
+    display: flex;
+    align-content: center;
+    justify-content: space-between;
+}
+
+.contact-col {
+    flex-basis: 48%;
+    color: #676767;
+    background-color: #fff;
+    box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
+    border-top: 3px solid #e0b77a;
+    border-bottom: 3px solid #e0b77a;
+    padding: 30px;
+    height: 100%;
+}
+
+.btn-home-send {
+    color: #e0b77a;
+    font-weight: 500;
+    font-size: 16px;
+    letter-spacing: 1px;
+    padding: 8px 28px;
+    border-radius: 5px;
+    transition: 0.3s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #e0b77a;
+}
+
+.btn-home-send {
+    font-size: 18px;
+    margin-left: 5px;
+    line-height: 0;
+    transition: 0.3s;
+}
+
+.btn-home-send:hover {
+    background: #e0b77a;
+    color: #ffffff;
+}
+
+.btn-home-send:hover {
+    transform: translate(5px, 0);
+}
+
+.contact-col h3 {
+    color: #000f38;
+    font-weight: 500;
+    font-size: 25px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.contact-col h3 .message {
+    width: 35px;
+    margin-left: 10px;
+}
+
+.contact-col p {
+    max-width: 450px;
+    list-style: 0.3;
+}
+
+.contact-col ul li {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.contact-col ul li .img-icon {
+    width: 25px;
+    margin-right: 10px;
+}
+
+.message {
+    margin-left: 5px;
+}
+
+.contact form input,
+.contact form textarea {
+    display: block;
+    width: 100%;
+    background: #ffffff;
+    padding: 15px;
+    border: 1px solid #6c757d;
+    outline: 0;
+    margin-bottom: 15px;
+    margin-top: 5px;
+    resize: none;
+}
+
+.contact form input:hover {
+    border: 1px solid #ecd6b4;
+}
+
+.contact form textarea:hover {
+    border: 1px solid #ecd6b4;
+}
+
+.contact-col span {
+    display: block;
+    margin: 20px 0;
+}
+
+/* ------ media query ------ */
+
+@media (max-width: 700px) {
+    .contact {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .contact-col {
+        padding: 20px;
+    }
+}

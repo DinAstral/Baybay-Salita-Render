@@ -1,0 +1,156 @@
+.menu-dash {
+    display: flex;
+    flex-direction: column;
+    gap: 2.3rem;
+    height: 96vh;
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+}
+
+.logo-dash {
+    color: #27374d;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
+
+.logo-dash img {
+    width: 60%;
+    cursor: pointer;
+}
+
+.logo-dash .dash-icon {
+    font-size: 1.4rem;
+}
+
+.menu--list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+}
+
+.menu--list .item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 1.1rem;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 10px;
+    border-radius: 10px;
+    transition: 0.3s ease-in-out;
+    color: #27374d;
+    cursor: pointer;
+}
+
+.menu--list .item:hover,
+.active {
+    background-color: #27374d;
+    color: #dde6ed !important;
+}
+
+.menu-help {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.menu-help h2 {
+    font-size: 1.1rem;
+    font-weight: 300;
+}
+
+.btn-side {
+    background: #27374d;
+    width: 150px;
+    color: #fff;
+    padding: 6px;
+    font-size: 1.1rem;
+    border-radius: 25px;
+    cursor: pointer;
+    border: 0;
+    outline: 0;
+    box-shadow: #9b9696 2px 3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-side:hover {
+    background-color: #eaeaea;
+    color: #27374d;
+    transition: 0.3s;
+}
+
+/* Media queries for responsiveness */
+
+/* Mobile phones (portrait and landscape) */
+@media only screen and (max-width: 600px) {
+    .menu-dash {
+        height: auto;
+    }
+
+    .logo-dash img {
+        width: 100%;
+    }
+
+    .menu--list .item {
+        font-size: 0.9rem;
+        padding: 8px;
+        gap: 15px;
+    }
+}
+
+/* Tablets and small desktops */
+@media only screen and (min-width: 601px) and (max-width: 1024px) {
+    .menu-dash {
+        height: 90vh;
+    }
+
+    .logo-dash img {
+        width: 90%;
+    }
+
+    .menu--list .item {
+        font-size: 1rem;
+        padding: 9px;
+        gap: 18px;
+    }
+}
+
+/* Medium desktops */
+@media only screen and (min-width: 1025px) and (max-width: 1440px) {
+    .menu-dash {
+        height: 95vh;
+    }
+
+    .logo-dash img {
+        width: 80%;
+    }
+
+    .menu--list .item {
+        font-size: 1.05rem;
+        padding: 9px;
+        gap: 18px;
+    }
+}
+
+/* Large desktops */
+@media only screen and (min-width: 1441px) {
+    .menu-dash {
+        height: 96vh;
+    }
+
+    .logo-dash img {
+        width: 300px;
+    }
+
+    .menu--list .item {
+        font-size: 1.1rem;
+        padding: 10px;
+        gap: 20px;
+    }
+}

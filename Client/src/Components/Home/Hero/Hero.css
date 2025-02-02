@@ -1,0 +1,61 @@
+.hero {
+    width: 100%;
+    min-height: 100vh;
+    background: url('../../../assets/Web_Baybay.png');
+    background-size: cover;
+    background-position: center;
+    color: #070707;
+    display: flex;
+    align-items: center;
+    justify-content: left;
+}
+
+.hero-text {
+    text-align: left;
+    max-width: 550px;
+    margin: 30px 100px;
+}
+
+.hero-text h1 {
+    font-size: 55px;
+    font-weight: 500;
+}
+
+.hero-text p {
+    max-width: 700px;
+    font-size: 20px;
+    margin: 10px 0 20px;
+    line-height: 1.4;
+}
+
+.icon-arrow {
+    margin-left: 10px;
+}
+
+/* ------ media queries ------ */
+
+@media (max-width: 850px) {
+    .hero-text h1 {
+        font-size: 40px;
+    }
+}
+
+@media (max-width: 650px) {
+    .hero {
+        background: url('../../../assets/Login_Right.png');
+        /* Removes background image */
+        background-color: #f0f0f0;
+        /* Adds a light background color instead */
+    }
+
+    .hero-text h1 {
+        font-size: 30px;
+        max-width: 400px;
+        margin: auto;
+    }
+
+    .hero-text p {
+        font-size: 14px;
+        margin: 15px auto;
+    }
+}
