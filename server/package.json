@@ -5,7 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "build": "npm install --prefix ../Client && npm run build --prefix ../Client && npm install --prefix ../server && npm start --prefix ../server"
+    "build": "npm install --prefix ../Client --production=false && npm run build --prefix ../Client && npm install"
   },
   "author": "",
   "license": "ISC",
