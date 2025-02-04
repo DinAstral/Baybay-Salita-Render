@@ -117,7 +117,7 @@ const ViewStudentPerformance = React.lazy(() =>
 );
 
 // Configure axios base URL
-axios.defaults.baseURL = "https://baybay-salita-heroku.onrender.com";
+axios.defaults.baseURL = "https://baybay-salita-render.onrender.com";
 axios.defaults.withCredentials = true;
 
 const App = () => {
