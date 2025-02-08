@@ -309,15 +309,13 @@ const BodyAdminDashboard = () => {
     const recommendations = {};
 
     sections.forEach((section) => {
-      // Filter performances for the current section.
       const sectionPerformances = performanceCounts.filter((performance) => {
         const student = students.find((s) => s.LRN === performance.LRN);
         return student && student.Section === section;
       });
 
-      // Initialize error counts and a collection for status-specific reasons.
-      const wordErrorCounts = {};
-      const letterErrorCounts = {};
+      const wordErrorCounts = {}; // Track incorrect words
+      const letterErrorCounts = {}; // Track incorrect letters
       const statusReasons = {
         Incomplete: [],
         LowEmergingReader: [],
@@ -327,24 +325,26 @@ const BodyAdminDashboard = () => {
         GradeLevelReader: [],
       };
 
-      // Process each performance.
       sectionPerformances.forEach((performance) => {
-        // Normalize the status string (trim and lowercase) for comparison.
-        const statusNormalized = performance.Status.trim().toLowerCase();
-        if (statusNormalized === "incomplete") {
-          statusReasons.Incomplete.push(
+        // Track status reasons
+        const status = performance.Status;
+        if (status === "Incomplete") {
+          statusReasons[status].push(
             `The student has not yet finished answering the ${performance.Type} assessment.`
           );
-        } else if (statusReasons[performance.Status]) {
-          statusReasons[performance.Status].push(
+        } else if (statusReasons[status]) {
+          statusReasons[status].push(
             `Low scores in ${performance.Type} (Score: ${performance.Score})`
           );
         }
 
-        // Count incorrect words and letters.
+        // Track word and letter errors
         performance.PerformanceItems.forEach((item) => {
           if (item.Remarks.toLowerCase() === "incorrect") {
+            // Track word errors
             wordErrorCounts[item.Word] = (wordErrorCounts[item.Word] || 0) + 1;
+
+            // Track letter errors (if applicable)
             if (item.Word.length === 1) {
               letterErrorCounts[item.Word] =
                 (letterErrorCounts[item.Word] || 0) + 1;
@@ -353,51 +353,56 @@ const BodyAdminDashboard = () => {
         });
       });
 
-      // Get top 5 most challenging words and letters.
+      // Get top 5 most challenging words
       const topWords = Object.keys(wordErrorCounts)
         .sort((a, b) => wordErrorCounts[b] - wordErrorCounts[a])
         .slice(0, 5);
+
+      // Get top 5 most challenging letters (if applicable)
       const topLetters = Object.keys(letterErrorCounts)
         .sort((a, b) => letterErrorCounts[b] - letterErrorCounts[a])
         .slice(0, 5);
 
-      const sectionRecs = [];
+      // Generate recommendations
+      const sectionRecommendations = [];
 
-      // Always include the incomplete recommendation if any incomplete performance exists.
-      if (statusReasons.Incomplete.length > 0) {
-        sectionRecs.push(
-          `Students with status "Incomplete" have not yet finished their assessments.`
-        );
-      }
-
-      // Add recommendations for other statuses.
+      // Add status reasons
       Object.keys(statusReasons).forEach((status) => {
-        if (status !== "Incomplete" && statusReasons[status].length > 0) {
-          sectionRecs.push(
-            `Students with status "${status}" have the following issues: ${statusReasons[
-              status
-            ].join(", ")}.`
-          );
+        if (statusReasons[status].length > 0) {
+          if (status === "Incomplete") {
+            sectionRecommendations.push(
+              `Students with status "${status}" have not yet finished their assessments.`
+            );
+          } else {
+            sectionRecommendations.push(
+              `Students with status "${status}" have the following issues: ${statusReasons[
+                status
+              ].join(", ")}.`
+            );
+          }
         }
       });
 
-      // Add word and letter difficulty recommendations (if available).
-      if (topWords.length > 0) {
-        sectionRecs.push(
-          `Students are struggling with the following words: ${topWords.join(
-            ", "
-          )}.`
-        );
-      }
-      if (topLetters.length > 0) {
-        sectionRecs.push(
-          `Students are struggling with the following letters: ${topLetters.join(
-            ", "
-          )}.`
-        );
+      // Add word and letter difficulties (only for non-Incomplete statuses)
+      if (selectedSection !== "Incomplete") {
+        if (topWords.length > 1) {
+          sectionRecommendations.push(
+            `Students are struggling with the following words: ${topWords.join(
+              ", "
+            )}.`
+          );
+        }
+
+        if (topLetters.length == 1) {
+          sectionRecommendations.push(
+            `Students are struggling with the following letters: ${topLetters.join(
+              ", "
+            )}.`
+          );
+        }
       }
 
-      recommendations[section] = sectionRecs;
+      recommendations[section] = sectionRecommendations;
     });
 
     setSectionRecommendations(recommendations);
