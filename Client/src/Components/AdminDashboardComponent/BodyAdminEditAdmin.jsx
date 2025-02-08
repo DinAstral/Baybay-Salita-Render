@@ -128,10 +128,8 @@ const BodyAdminEditAdmin = () => {
               <label className="font-medium text-gray-700">Gender</label>
               <Select
                 placeholder="Select Gender"
-                value={data.Gender}
-                onChange={(value) =>
-                  setData({ ...data, Gender: e.target.value })
-                }
+                selectedKeys={[data.Gender]}
+                onChange={(e) => setData({ ...data, Gender: e.target.value })}
               >
                 <SelectItem key="" disabled>
                   Select Gender
@@ -155,10 +153,8 @@ const BodyAdminEditAdmin = () => {
               <label className="font-medium text-gray-700">Status</label>
               <Select
                 placeholder="Select Status"
-                value={data.Status}
-                onChange={(value) =>
-                  setData({ ...data, Status: e.target.value })
-                }
+                selectedKeys={[data.Status]}
+                onChange={(e) => setData({ ...data, Status: e.target.value })}
               >
                 <SelectItem key="" disabled>
                   Select Status
