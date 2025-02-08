@@ -177,6 +177,13 @@ const BodyAdminDashboard = () => {
     }
   };
 
+  useEffect(() => {
+    if (students.length && performanceCounts.length) {
+      computeAverageScores();
+      generateSectionRecommendations();
+    }
+  }, [students, performanceCounts, selectedAssessment]);
+
   // Count the number of users by role (e.g., Teacher, Parent)
   const countByRole = (data, role) =>
     data.filter((user) => user.role === role).length;
