@@ -219,7 +219,7 @@ const addStudent = async (req, res) => {
     // Check if the LRN is already in use
     const exist = await StudentModel.findOne({ LRN });
     if (exist) {
-      return errorResponse("LRN is already taken.");
+      return errorResponse("Student is already registered.");
     }
 
     // Validate required fields

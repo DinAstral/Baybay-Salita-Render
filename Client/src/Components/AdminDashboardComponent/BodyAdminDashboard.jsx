@@ -305,10 +305,14 @@ const BodyAdminDashboard = () => {
     setAverageScores(avgScores);
   };
 
+  // Define a constant for the incomplete message.
+  const INCOMPLETE_MESSAGE =
+    'Students with status "Incomplete" have not yet finished their assessments.';
+
   const generateSectionRecommendations = () => {
     const recommendations = {};
 
-    // Use the exact status strings that your UI expects
+    // Define the status types as they appear in the student data.
     const statusTypes = [
       "Incomplete",
       "Low Emerging Reader",
@@ -319,41 +323,61 @@ const BodyAdminDashboard = () => {
     ];
 
     sections.forEach((section) => {
-      // Filter performances for the current section
+      // First, get all students in this section.
+      const sectionStudents = students.filter(
+        (student) => student.Section === section
+      );
+      // Check if any student in the section is "Incomplete"
+      const hasIncomplete = sectionStudents.some(
+        (student) => student.status === "Incomplete"
+      );
+
+      // Filter performance records for this section.
       const sectionPerformances = performanceCounts.filter((performance) => {
         const student = students.find((s) => s.LRN === performance.LRN);
         return student && student.Section === section;
       });
 
-      // Initialize error counts for words and letters
-      const wordErrorCounts = {};
-      const letterErrorCounts = {};
+      // Containers to accumulate information.
+      const lowScoreAssessments = {}; // key: assessment type, value: count of low scores
+      const wordErrorCounts = {}; // key: word, value: error count
+      const letterErrorCounts = {}; // key: letter, value: error count
 
-      // Initialize an object to store messages per status type
+      // Initialize an object to store messages per status (from performance data).
       const statusReasons = {};
       statusTypes.forEach((status) => {
         statusReasons[status] = [];
       });
 
+      // Process each performance record in this section.
       sectionPerformances.forEach((performance) => {
-        // Do not trim the status here
-        const status = performance.Status;
-        if (status === "Incomplete") {
-          statusReasons[status].push(
+        // Use the student record to obtain the student's status.
+        const studentData = students.find((s) => s.LRN === performance.LRN);
+        const studentStatus = studentData.status; // Exactly as stored in the student record
+
+        // Tally low scores if the performance score is less than 5.
+        if (performance.Score < 5) {
+          lowScoreAssessments[performance.Type] =
+            (lowScoreAssessments[performance.Type] || 0) + 1;
+        }
+
+        // Based on the student's status, accumulate messages.
+        if (studentStatus === "Incomplete") {
+          statusReasons[studentStatus].push(
             `The student has not yet finished answering the ${performance.Type} assessment.`
           );
-        } else if (statusReasons[status] !== undefined) {
-          statusReasons[status].push(
+        } else if (statusReasons[studentStatus] !== undefined) {
+          statusReasons[studentStatus].push(
             `Low scores in ${performance.Type} (Score: ${performance.Score})`
           );
         }
 
-        // Loop through performance items to count errors
+        // Loop through performance items to count errors.
         performance.PerformanceItems.forEach((item) => {
           if (item.Remarks.toLowerCase() === "incorrect") {
-            // Count word errors (we’ll later filter words with more than 2 characters)
+            // Count word errors (we will filter to words longer than 2 characters later)
             wordErrorCounts[item.Word] = (wordErrorCounts[item.Word] || 0) + 1;
-            // Count letter errors if the item is a single character
+            // Count letter errors if the item is a single character.
             if (item.Word.length === 1) {
               letterErrorCounts[item.Word] =
                 (letterErrorCounts[item.Word] || 0) + 1;
@@ -362,27 +386,33 @@ const BodyAdminDashboard = () => {
         });
       });
 
-      // Get top 5 most challenging words (only include words with more than 2 characters)
+      // Build a low-score recommendation message if any low scores exist.
+      const lowScoreMsg =
+        Object.keys(lowScoreAssessments).length > 0
+          ? `Consider reviewing concepts in ${Object.keys(
+              lowScoreAssessments
+            ).join(", ")} as scores are low.`
+          : "";
+
+      // Get the top 5 challenging words (only include words with more than 2 characters).
       const topWords = Object.keys(wordErrorCounts)
         .filter((word) => word.length > 2)
         .sort((a, b) => wordErrorCounts[b] - wordErrorCounts[a])
         .slice(0, 5);
 
-      // Get top 5 most challenging letters (if applicable)
+      // Get the top 5 challenging letters (if applicable).
       const topLetters = Object.keys(letterErrorCounts)
         .sort((a, b) => letterErrorCounts[b] - letterErrorCounts[a])
         .slice(0, 5);
 
-      // Build the recommendations array for the current section
+      // Build the recommendations array for this section.
       const sectionRecommendations = [];
 
-      // Priority: If any "Incomplete" statuses exist, add that message only.
-      if (statusReasons["Incomplete"].length > 0) {
-        sectionRecommendations.push(
-          `Students with status "Incomplete" have not yet finished their assessments.`
-        );
+      // Priority: If any student in this section is "Incomplete", add the incomplete message.
+      if (hasIncomplete) {
+        sectionRecommendations.push(INCOMPLETE_MESSAGE);
       } else {
-        // For the remaining statuses, iterate and add messages if available.
+        // Otherwise, add recommendations for each other status if messages exist.
         statusTypes.forEach((status) => {
           if (status !== "Incomplete" && statusReasons[status].length > 0) {
             sectionRecommendations.push(
@@ -392,16 +422,20 @@ const BodyAdminDashboard = () => {
             );
           }
         });
-
-        // Also add word and letter difficulties when there are no Incomplete statuses.
-        if (topWords.length > 1) {
+        // Add the low-score recommendation if available.
+        if (lowScoreMsg) {
+          sectionRecommendations.push(lowScoreMsg);
+        }
+        // Add recommendations for challenging words.
+        if (topWords.length > 0) {
           sectionRecommendations.push(
             `Students are struggling with the following words: ${topWords.join(
               ", "
             )}.`
           );
         }
-        if (topLetters.length > 1) {
+        // Add recommendations for challenging letters.
+        if (topLetters.length > 0) {
           sectionRecommendations.push(
             `Students are struggling with the following letters: ${topLetters.join(
               ", "
@@ -410,10 +444,10 @@ const BodyAdminDashboard = () => {
         }
       }
 
+      // Assign the built recommendations to the current section.
       recommendations[section] = sectionRecommendations;
     });
 
-    console.log("Recommendations:", recommendations);
     setSectionRecommendations(recommendations);
   };
 
