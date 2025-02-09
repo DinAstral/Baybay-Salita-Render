@@ -305,14 +305,13 @@ const BodyAdminDashboard = () => {
     setAverageScores(avgScores);
   };
 
-  // Define a constant for the incomplete recommendation message.
   const INCOMPLETE_MESSAGE =
     'Students with status "Incomplete" have not yet finished their assessments.';
 
   const generateSectionRecommendations = () => {
     const recommendations = {};
 
-    // Define the status types exactly as they appear in the student data.
+    // Define the status types as they appear in the student data.
     const statusTypes = [
       "Incomplete",
       "Low Emerging Reader",
@@ -322,23 +321,16 @@ const BodyAdminDashboard = () => {
       "Grade Level Reader",
     ];
 
-    // Iterate over each section using a for...of loop.
+    // Iterate over each section.
     for (const section of sections) {
-      // Get all students in this section.
-      const sectionStudents = students.filter(
-        (student) => student.Section === section
-      );
-
-      // Check if any student in this section is marked as "Incomplete".
-      const hasIncomplete = sectionStudents.some(
-        (student) => student.status === "Incomplete"
-      );
-
       // Filter performance records for this section.
-      const sectionPerformances = performanceCounts.filter((performance) => {
-        const student = students.find((s) => s.LRN === performance.LRN);
-        return student && student.Section === section;
-      });
+      const sectionPerformances = [];
+      for (const performance of performanceCounts) {
+        const studentData = students.find((s) => s.LRN === performance.LRN);
+        if (studentData && studentData.Section === section) {
+          sectionPerformances.push(performance);
+        }
+      }
 
       // Containers to accumulate information.
       const lowScoreAssessments = {}; // key: assessment type, value: count of low scores
@@ -417,13 +409,12 @@ const BodyAdminDashboard = () => {
       // Build the recommendations array for this section.
       const sectionRecommendations = [];
 
-      // Priority: If any student in this section is "Incomplete", add the incomplete message.
-      if (hasIncomplete) {
-        sectionRecommendations.push(INCOMPLETE_MESSAGE);
-      } else {
-        // Otherwise, add recommendations for each other status if messages exist.
-        for (const status of statusTypes) {
-          if (status !== "Incomplete" && statusReasons[status].length > 0) {
+      // Iterate over each status type and add recommendations if messages exist.
+      for (const status of statusTypes) {
+        if (statusReasons[status].length > 0) {
+          if (status === "Incomplete") {
+            sectionRecommendations.push(INCOMPLETE_MESSAGE);
+          } else {
             sectionRecommendations.push(
               `Students with status "${status}" have the following issues: ${statusReasons[
                 status
@@ -431,26 +422,29 @@ const BodyAdminDashboard = () => {
             );
           }
         }
-        // Add the low-score recommendation if available.
-        if (lowScoreMsg) {
-          sectionRecommendations.push(lowScoreMsg);
-        }
-        // Add recommendations for challenging words.
-        if (topWords.length > 0) {
-          sectionRecommendations.push(
-            `Students are struggling with the following words: ${topWords.join(
-              ", "
-            )}.`
-          );
-        }
-        // Add recommendations for challenging letters.
-        if (topLetters.length > 0) {
-          sectionRecommendations.push(
-            `Students are struggling with the following letters: ${topLetters.join(
-              ", "
-            )}.`
-          );
-        }
+      }
+
+      // Add the low-score recommendation if available.
+      if (lowScoreMsg) {
+        sectionRecommendations.push(lowScoreMsg);
+      }
+
+      // Add recommendations for challenging words.
+      if (topWords.length > 0) {
+        sectionRecommendations.push(
+          `Students are struggling with the following words: ${topWords.join(
+            ", "
+          )}.`
+        );
+      }
+
+      // Add recommendations for challenging letters.
+      if (topLetters.length > 0) {
+        sectionRecommendations.push(
+          `Students are struggling with the following letters: ${topLetters.join(
+            ", "
+          )}.`
+        );
       }
 
       recommendations[section] = sectionRecommendations;

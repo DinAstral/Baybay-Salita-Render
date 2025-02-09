@@ -24,7 +24,7 @@ const storage = multer.diskStorage({
 
 const fileFilter = (req, file, cb) => {
   try {
-    // Check for image or audio type
+    // Check for image or audio types
     if (file.fieldname === "Image" || file.fieldname === "Profile") {
       if (
         file.mimetype === "image/jpeg" ||
@@ -41,7 +41,15 @@ const fileFilter = (req, file, cb) => {
       file.fieldname.startsWith("Audio") ||
       file.fieldname.startsWith("User")
     ) {
-      if (file.mimetype.startsWith("audio/")) {
+      // Allow if the MIME type indicates audio...
+      if (file.mimetype && file.mimetype.startsWith("audio/")) {
+        return cb(null, true);
+      }
+      // ...or if the original filename ends with .wav (as in your default silent WAV file)
+      else if (
+        file.originalname &&
+        file.originalname.toLowerCase().endsWith(".wav")
+      ) {
         return cb(null, true);
       } else {
         return cb(
