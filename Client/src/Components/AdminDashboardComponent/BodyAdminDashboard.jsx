@@ -305,14 +305,14 @@ const BodyAdminDashboard = () => {
     setAverageScores(avgScores);
   };
 
-  // Define a constant for the incomplete message.
+  // Define a constant for the incomplete recommendation message.
   const INCOMPLETE_MESSAGE =
     'Students with status "Incomplete" have not yet finished their assessments.';
 
   const generateSectionRecommendations = () => {
     const recommendations = {};
 
-    // Define the status types as they appear in the student data.
+    // Define the status types exactly as they appear in the student data.
     const statusTypes = [
       "Incomplete",
       "Low Emerging Reader",
@@ -322,12 +322,14 @@ const BodyAdminDashboard = () => {
       "Grade Level Reader",
     ];
 
-    sections.forEach((section) => {
-      // First, get all students in this section.
+    // Iterate over each section using a for...of loop.
+    for (const section of sections) {
+      // Get all students in this section.
       const sectionStudents = students.filter(
         (student) => student.Section === section
       );
-      // Check if any student in the section is "Incomplete"
+
+      // Check if any student in this section is marked as "Incomplete".
       const hasIncomplete = sectionStudents.some(
         (student) => student.status === "Incomplete"
       );
@@ -343,17 +345,18 @@ const BodyAdminDashboard = () => {
       const wordErrorCounts = {}; // key: word, value: error count
       const letterErrorCounts = {}; // key: letter, value: error count
 
-      // Initialize an object to store messages per status (from performance data).
+      // Initialize an object to store messages per status.
       const statusReasons = {};
-      statusTypes.forEach((status) => {
+      for (const status of statusTypes) {
         statusReasons[status] = [];
-      });
+      }
 
       // Process each performance record in this section.
-      sectionPerformances.forEach((performance) => {
-        // Use the student record to obtain the student's status.
+      for (const performance of sectionPerformances) {
+        // Get the student record to obtain the student's status.
         const studentData = students.find((s) => s.LRN === performance.LRN);
-        const studentStatus = studentData.status; // Exactly as stored in the student record
+        if (!studentData) continue;
+        const studentStatus = studentData.status; // Use as stored in the student record
 
         // Tally low scores if the performance score is less than 5.
         if (performance.Score < 5) {
@@ -361,7 +364,7 @@ const BodyAdminDashboard = () => {
             (lowScoreAssessments[performance.Type] || 0) + 1;
         }
 
-        // Based on the student's status, accumulate messages.
+        // Accumulate messages based on the student's status.
         if (studentStatus === "Incomplete") {
           statusReasons[studentStatus].push(
             `The student has not yet finished answering the ${performance.Type} assessment.`
@@ -372,19 +375,25 @@ const BodyAdminDashboard = () => {
           );
         }
 
-        // Loop through performance items to count errors.
-        performance.PerformanceItems.forEach((item) => {
-          if (item.Remarks.toLowerCase() === "incorrect") {
-            // Count word errors (we will filter to words longer than 2 characters later)
-            wordErrorCounts[item.Word] = (wordErrorCounts[item.Word] || 0) + 1;
-            // Count letter errors if the item is a single character.
-            if (item.Word.length === 1) {
-              letterErrorCounts[item.Word] =
-                (letterErrorCounts[item.Word] || 0) + 1;
+        // Process performance items to count errors.
+        if (
+          performance.PerformanceItems &&
+          Array.isArray(performance.PerformanceItems)
+        ) {
+          for (const item of performance.PerformanceItems) {
+            if (item.Remarks.toLowerCase() === "incorrect") {
+              // Count word errors (will later filter to words with more than 2 characters).
+              wordErrorCounts[item.Word] =
+                (wordErrorCounts[item.Word] || 0) + 1;
+              // Count letter errors if the word is a single character.
+              if (item.Word.length === 1) {
+                letterErrorCounts[item.Word] =
+                  (letterErrorCounts[item.Word] || 0) + 1;
+              }
             }
           }
-        });
-      });
+        }
+      }
 
       // Build a low-score recommendation message if any low scores exist.
       const lowScoreMsg =
@@ -413,7 +422,7 @@ const BodyAdminDashboard = () => {
         sectionRecommendations.push(INCOMPLETE_MESSAGE);
       } else {
         // Otherwise, add recommendations for each other status if messages exist.
-        statusTypes.forEach((status) => {
+        for (const status of statusTypes) {
           if (status !== "Incomplete" && statusReasons[status].length > 0) {
             sectionRecommendations.push(
               `Students with status "${status}" have the following issues: ${statusReasons[
@@ -421,7 +430,7 @@ const BodyAdminDashboard = () => {
               ].join(", ")}.`
             );
           }
-        });
+        }
         // Add the low-score recommendation if available.
         if (lowScoreMsg) {
           sectionRecommendations.push(lowScoreMsg);
@@ -444,9 +453,8 @@ const BodyAdminDashboard = () => {
         }
       }
 
-      // Assign the built recommendations to the current section.
       recommendations[section] = sectionRecommendations;
-    });
+    }
 
     setSectionRecommendations(recommendations);
   };
