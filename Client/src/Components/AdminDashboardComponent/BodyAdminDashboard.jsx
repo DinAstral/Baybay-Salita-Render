@@ -308,33 +308,42 @@ const BodyAdminDashboard = () => {
   const generateSectionRecommendations = () => {
     const recommendations = {};
 
+    // Use a local array of status types that match the keys in your data
+    const statusTypesForRec = [
+      "Incomplete",
+      "LowEmergingReader",
+      "HighEmergingReader",
+      "DevelopingReader",
+      "TransitioningReader",
+      "GradeLevelReader",
+    ];
+
     sections.forEach((section) => {
-      // Get all performances for the section
+      // Filter performances for the current section
       const sectionPerformances = performanceCounts.filter((performance) => {
         const student = students.find((s) => s.LRN === performance.LRN);
         return student && student.Section === section;
       });
 
-      // Prepare objects to track errors and status details
+      // Initialize error counts for words and letters
       const wordErrorCounts = {}; // Incorrect words
       const letterErrorCounts = {}; // Incorrect letters
-      const statusReasons = {
-        Incomplete: [],
-        LowEmergingReader: [],
-        HighEmergingReader: [],
-        DevelopingReader: [],
-        TransitioningReader: [],
-        GradeLevelReader: [],
-      };
 
+      // Initialize an object to store messages for each status type
+      const statusMessages = {};
+      statusTypesForRec.forEach((status) => {
+        statusMessages[status] = [];
+      });
+
+      // Process each performance in the section
       sectionPerformances.forEach((performance) => {
-        const status = performance.Status;
+        const status = performance.Status; // Expecting a value like "Incomplete", "LowEmergingReader", etc.
         if (status === "Incomplete") {
-          statusReasons[status].push(
+          statusMessages[status].push(
             `The student has not yet finished answering the ${performance.Type} assessment.`
           );
-        } else if (statusReasons[status] !== undefined) {
-          statusReasons[status].push(
+        } else if (statusMessages[status] !== undefined) {
+          statusMessages[status].push(
             `Low scores in ${performance.Type} (Score: ${performance.Score})`
           );
         }
@@ -342,7 +351,7 @@ const BodyAdminDashboard = () => {
         // Loop through performance items to count errors
         performance.PerformanceItems.forEach((item) => {
           if (item.Remarks.toLowerCase() === "incorrect") {
-            // Count word errors (we’ll later filter words with more than 2 characters)
+            // Count word errors (we’ll filter words with more than 2 characters later)
             wordErrorCounts[item.Word] = (wordErrorCounts[item.Word] || 0) + 1;
             // Count letter errors if the item is a single character
             if (item.Word.length === 1) {
@@ -364,20 +373,20 @@ const BodyAdminDashboard = () => {
         .sort((a, b) => letterErrorCounts[b] - letterErrorCounts[a])
         .slice(0, 5);
 
-      // Build the recommendations for this section
+      // Build the recommendations array for the current section
       const sectionRecommendations = [];
 
-      // If any incomplete statuses exist, add that message first.
-      if (statusReasons["Incomplete"].length > 0) {
+      // Priority: if there are any "Incomplete" statuses, add that message only.
+      if (statusMessages["Incomplete"].length > 0) {
         sectionRecommendations.push(
           `Students with status "Incomplete" have not yet finished their assessments.`
         );
       } else {
-        // Add recommendations for other statuses.
-        Object.keys(statusReasons).forEach((status) => {
-          if (status !== "Incomplete" && statusReasons[status].length > 0) {
+        // Iterate over the defined status types (excluding "Incomplete")
+        statusTypesForRec.forEach((status) => {
+          if (status !== "Incomplete" && statusMessages[status].length > 0) {
             sectionRecommendations.push(
-              `Students with status "${status}" have the following issues: ${statusReasons[
+              `Students with status "${status}" have the following issues: ${statusMessages[
                 status
               ].join(", ")}.`
             );
