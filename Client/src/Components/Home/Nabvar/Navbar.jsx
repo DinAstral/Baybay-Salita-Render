@@ -74,7 +74,16 @@ function Navbar() {
             Contact
           </LinkScroll>
         </li>
-        <li>Download</li>
+        <li>
+          <a
+            href="https://drive.google.com/uc?export=download&id=1cTyLL1aLCqnSU6VUg0EmiYOBMn3ghCE-"
+            className="cursor-pointer"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Download APK
+          </a>
+        </li>
         {user && (
           <>
             <li>

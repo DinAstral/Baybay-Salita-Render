@@ -42,7 +42,7 @@ const BodyViewPerformance = () => {
     Type: "",
     PerformanceItems: [],
     QuestionData: [],
-    Score: "",
+    Score: 0,
     TimeRead: "",
   });
 

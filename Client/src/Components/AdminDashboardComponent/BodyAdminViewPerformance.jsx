@@ -40,10 +40,12 @@ const BodyAdminViewPerformance = () => {
     Type: "",
     PerformanceItems: [],
     QuestionData: [],
-    Score: "",
+    Score: 0,
     TimeRead: "",
   });
+  const [students, setStudents] = useState([]);
 
+  // Fetch performance data
   useEffect(() => {
     const fetchPerformanceData = async () => {
       try {
@@ -58,6 +60,25 @@ const BodyAdminViewPerformance = () => {
 
     fetchPerformanceData();
   }, [UserInputId]);
+
+  // Fetch students data
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await axios.get("/api/getStudents");
+        setStudents(response.data);
+      } catch (err) {
+        toast.error("Failed to fetch students data. Please try again later.");
+      }
+    };
+
+    fetchStudents();
+  }, []);
+
+  // Find student name matching the LRN
+  // Assumes each student object has properties: LRN and Name.
+  const student = students.find((s) => s.LRN === data.LRN);
+  const studentName = student ? student.Name : "N/A";
 
   const handleViewClick = () => {
     setModalShowView(true);
@@ -98,6 +119,9 @@ const BodyAdminViewPerformance = () => {
           </p>
           <p className="text-gray-700">
             <strong>LRN:</strong> {data.LRN || "N/A"}
+          </p>
+          <p className="text-gray-700">
+            <strong>Student Name:</strong> {studentName}
           </p>
           <p className="text-gray-700">
             <strong>Section:</strong> {data.Section || "N/A"}
