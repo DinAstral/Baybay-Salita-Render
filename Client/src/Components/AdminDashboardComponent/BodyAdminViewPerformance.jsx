@@ -78,7 +78,9 @@ const BodyAdminViewPerformance = () => {
   // Find student name matching the LRN
   // Assumes each student object has properties: LRN and Name.
   const student = students.find((s) => s.LRN === data.LRN);
-  const studentName = student ? student.Name : "N/A";
+  const studentName = student
+    ? student.FirstName + " " + student.LastName
+    : "N/A";
 
   const handleViewClick = () => {
     setModalShowView(true);
