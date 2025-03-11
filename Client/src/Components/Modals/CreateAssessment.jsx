@@ -15,8 +15,8 @@ import {
 
 const CreateSuccess = ({ show, onHide }) => {
   const handleSuccessClick = () => {
+    // Simply close the success modal without reloading the page.
     onHide();
-    window.location.reload();
   };
   return (
     <Modal
@@ -64,7 +64,6 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
     Item9: "",
     Item10: "",
   });
-
   const [errors, setErrors] = useState({});
 
   const fetchImportWord = () => {
@@ -85,9 +84,10 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
       .catch((err) => console.log(err));
   };
 
+  // Fetch assessments for the given section and user.
   const fetchExistingAssessments = () => {
     axios
-      .get(`/api/getAssessments?section=${section}`)
+      .get(`/api/getAssessments?section=${section}&userId=${userId}`)
       .then((response) => {
         setExistingAssessments(response.data);
       })
@@ -116,6 +116,7 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
     setData({ ...data, [itemKey]: selectedItem ? selectedItem.ItemCode : "" });
   };
 
+  // Assessment options defined in sequential order.
   const assessmentOptions = [
     { key: "Pagbabaybay", label: "Assessment 1: Pagbabaybay Tunog at Letra" },
     { key: "Pantig", label: "Assessment 2: Pantig" },
@@ -123,7 +124,8 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
     { key: "Pagbabasa", label: "Assessment 4: Pagbabasa" },
   ];
 
-  const getMaxAvailableAssessment = () => {
+  // The next assessment that can be created for this user.
+  const getNextAssessmentNumber = () => {
     return existingAssessments.length + 1;
   };
 
@@ -139,25 +141,29 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
       newErrors.Type = "Type of Assessment is required.";
       isValid = false;
     }
-
     if (data.Type === "Pagbabasa" && !data.Title) {
       newErrors.Title = "Title is required for Pagbabasa.";
       isValid = false;
     }
-
     for (let i = 1; i <= 10; i++) {
       if (data.Type !== "Pagbabasa" && !data[`Item${i}`]) {
         newErrors[`Item${i}`] = `Item ${i} is required.`;
         isValid = false;
       }
     }
-
     setErrors(newErrors);
     return isValid;
   };
 
   const createAct = async (e) => {
     e.preventDefault();
+
+    // Ensure that the selected assessment matches the next sequential unlocked assessment.
+    const nextAssessment = assessmentOptions[getNextAssessmentNumber() - 1];
+    if (data.Type !== nextAssessment.key) {
+      toast.error("You must create assessments in sequential order.");
+      return;
+    }
 
     if (!validateInputs()) {
       toast.error("Please fill out all required fields.");
@@ -185,6 +191,8 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
       if (response.data.error) {
         toast.error(response.data.error);
       } else {
+        // Re-fetch assessments to unlock the next one.
+        fetchExistingAssessments();
         setData({
           Period: "",
           Type: "",
@@ -221,28 +229,43 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
                 label="Grading Period"
                 placeholder="Select Grading Period"
                 value={data.Period}
-                onChange={(e) => setData({ ...data, Period: e.target.value })}
+                onChange={(e) =>
+                  setData({ ...data, Period: e.target.value })
+                }
                 isInvalid={!!errors.Period}
                 errorMessage={errors.Period}
               >
-                <SelectItem key="1">Grading Period 1</SelectItem>
-                <SelectItem key="2">Grading Period 2</SelectItem>
-                <SelectItem key="3">Grading Period 3</SelectItem>
-                <SelectItem key="4">Grading Period 4</SelectItem>
+                <SelectItem key="1" value="Grading Period 1">
+                  Grading Period 1
+                </SelectItem>
+                <SelectItem key="2" value="Grading Period 2">
+                  Grading Period 2
+                </SelectItem>
+                <SelectItem key="3" value="Grading Period 3">
+                  Grading Period 3
+                </SelectItem>
+                <SelectItem key="4" value="Grading Period 4">
+                  Grading Period 4
+                </SelectItem>
               </Select>
 
               <Select
                 label="Type of Assessment"
                 placeholder="Select Type of Assessment:"
                 value={data.Type}
-                onChange={(e) => setData({ ...data, Type: e.target.value })}
+                onChange={(e) =>
+                  setData({ ...data, Type: e.target.value })
+                }
                 isInvalid={!!errors.Type}
                 errorMessage={errors.Type}
               >
                 {assessmentOptions.map(
                   (option, index) =>
-                    index + 1 <= getMaxAvailableAssessment() && (
-                      <SelectItem key={option.key}>{option.label}</SelectItem>
+                    // Only show the next unlocked assessment for creation.
+                    index + 1 === getNextAssessmentNumber() && (
+                      <SelectItem key={option.key} value={option.key}>
+                        {option.label}
+                      </SelectItem>
                     )
                 )}
               </Select>
@@ -252,7 +275,9 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
                   label="Title"
                   value={data.Title}
                   placeholder="Select a Title:"
-                  onChange={(e) => setData({ ...data, Title: e.target.value })}
+                  onChange={(e) =>
+                    setData({ ...data, Title: e.target.value })
+                  }
                   isInvalid={!!errors.Title}
                   errorMessage={errors.Title}
                 >
@@ -277,7 +302,7 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
                       errorMessage={errors[`Item${i + 1}`]}
                     >
                       {filteredWords.map((word) => (
-                        <SelectItem key={word.ItemCode} value={word.Word}>
+                        <SelectItem key={word.ItemCode} value={word.ItemCode}>
                           {word.Word}
                         </SelectItem>
                       ))}
