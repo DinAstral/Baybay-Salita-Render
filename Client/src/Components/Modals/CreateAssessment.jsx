@@ -88,7 +88,7 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
   // Update the existing assessment API call to include the current teacher's UserID
   const fetchExistingAssessments = () => {
     axios
-      .get(`/api/getAssessments?Section=${section}&UserID=${userId}`)
+      .get(`/api/getAssessments?section=${section}&userId=${userId}`)
       .then((response) => {
         setExistingAssessments(response.data);
       })
