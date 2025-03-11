@@ -16,9 +16,8 @@ import {
 const CreateSuccess = ({ show, onHide }) => {
   const handleSuccessClick = () => {
     onHide();
-    window.location.reload(); // Consider updating state instead of reloading.
+    window.location.reload();
   };
-
   return (
     <Modal
       isOpen={show}
@@ -49,12 +48,7 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
   const [words, setWords] = useState([]);
   const [sentences, setSentences] = useState([]);
   const [filteredWords, setFilteredWords] = useState([]);
-  const [assessmentExist, setAssessmentExist] = useState({
-    "Assessment 1": false,
-    "Assessment 2": false,
-    "Assessment 3": false,
-    "Assessment 4": false,
-  });
+  const [existingAssessments, setExistingAssessments] = useState([]);
   const [data, setData] = useState({
     Period: "",
     Type: "",
@@ -73,50 +67,23 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
 
   const [errors, setErrors] = useState({});
 
+  const fetchExistingAssessments = () => {
+    axios
+      .get(`/api/getAssessments?section=${section}`)
+      .then((response) => {
+        setExistingAssessments(response.data);
+      })
+      .catch((err) => console.log(err));
+  };
+
   useEffect(() => {
-    fetchAssessments();
     fetchImportWord();
     fetchImportSentence();
+    fetchExistingAssessments();
   }, []);
 
-  const fetchAssessments = () => {
-    axios
-      .get(`/api/getAssessments`)
-      .then((response) => {
-        const assessments = response.data.filter(
-          (activity) => activity.UserID === userId && activity.Section === section
-        );
-        const assessmentStatus = {
-          "Assessment 1": assessments.some((activity) => activity.Type === "Pagbabaybay"),
-          "Assessment 2": assessments.some((activity) => activity.Type === "Pantig"),
-          "Assessment 3": assessments.some((activity) => activity.Type === "Salita"),
-          "Assessment 4": assessments.some((activity) => activity.Type === "Pagbabasa"),
-        };
-        setAssessmentExist(assessmentStatus);
-      })
-      .catch((err) => console.log(err));
-  };
-
-  const fetchImportWord = () => {
-    axios
-      .get("/api/getImportWord")
-      .then((response) => {
-        setWords(response.data);
-      })
-      .catch((err) => console.log(err));
-  };
-
-  const fetchImportSentence = () => {
-    axios
-      .get("/api/getSentence")
-      .then((response) => {
-        setSentences(response.data);
-      })
-      .catch((err) => console.log(err));
-  };
-
   useEffect(() => {
-    if (data.Type && data.Type !== "Pagbabasa") {
+    if (data.Type) {
       const filtered = words.filter((word) => word.Type === data.Type);
       setFilteredWords(filtered);
     } else {
@@ -124,15 +91,22 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
     }
   }, [data.Type, words]);
 
-  // Handle selection change for word items
   const handleWordChange = (itemKey, selectedWord) => {
     const selectedItem = filteredWords.find(
-      (word) => word.Word === selectedWord
+      (word) => word.ItemCode === selectedWord
     );
-    setData((prevData) => ({
-      ...prevData,
-      [itemKey]: selectedItem ? selectedItem.ItemCode : "",
-    }));
+    setData({ ...data, [itemKey]: selectedItem ? selectedItem.ItemCode : "" });
+  };
+
+  const assessmentOptions = [
+    { key: "Pagbabaybay", label: "Assessment 1: Pagbabaybay Tunog at Letra" },
+    { key: "Pantig", label: "Assessment 2: Pantig" },
+    { key: "Salita", label: "Assessment 3: Salita" },
+    { key: "Pagbabasa", label: "Assessment 4: Pagbabasa" },
+  ];
+
+  const getMaxAvailableAssessment = () => {
+    return existingAssessments.length + 1;
   };
 
   const validateInputs = () => {
@@ -153,12 +127,10 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
       isValid = false;
     }
 
-    if (data.Type !== "Pagbabasa") {
-      for (let i = 1; i <= 10; i++) {
-        if (!data[`Item${i}`]) {
-          newErrors[`Item${i}`] = `Item ${i} is required.`;
-          isValid = false;
-        }
+    for (let i = 1; i <= 10; i++) {
+      if (data.Type !== "Pagbabasa" && !data[`Item${i}`]) {
+        newErrors[`Item${i}`] = `Item ${i} is required.`;
+        isValid = false;
       }
     }
 
@@ -175,7 +147,7 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
     }
 
     try {
-      const response = await axios.post(`/api/submitAssessment`, {
+      const response = await axios.post("/api/submitAssessment", {
         UserID: userId,
         Section: section,
         Period: data.Period,
@@ -222,32 +194,16 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
 
   return (
     <>
-      <Modal
-        isOpen={show}
-        onClose={handleClose}
-        size="lg"
-        aria-labelledby="contained-modal-title-vcenter"
-        isDismissable={false}
-        isKeyboardDismissDisabled={true}
-        placement="center"
-        scrollBehavior="inside"
-      >
-        <ModalContent className="w-full md:w-[50vw] max-w-full max-h-[80vh] overflow-y-auto bg-white p-4 rounded-lg">
-          <ModalHeader
-            id="contained-modal-title-vcenter"
-            className="text-lg font-bold"
-          >
-            Create New Activity
-          </ModalHeader>
-          <form onSubmit={createAct} className="space-y-4">
+      <Modal isOpen={show} onClose={handleClose} size="lg">
+        <ModalContent>
+          <ModalHeader>Create New Activity</ModalHeader>
+          <form onSubmit={createAct}>
             <ModalBody>
               <Select
-                labelPlacement="outside"
                 label="Grading Period"
                 placeholder="Select Grading Period"
                 value={data.Period}
                 onChange={(e) => setData({ ...data, Period: e.target.value })}
-                className="w-full my-2"
                 isInvalid={!!errors.Period}
                 errorMessage={errors.Period}
               >
@@ -258,37 +214,27 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
               </Select>
 
               <Select
-                labelPlacement="outside"
                 label="Type of Assessment"
-                placeholder="Select Type of Assessment"
+                placeholder="Select Type of Assessment:"
                 value={data.Type}
                 onChange={(e) => setData({ ...data, Type: e.target.value })}
-                className="w-full my-2"
                 isInvalid={!!errors.Type}
                 errorMessage={errors.Type}
               >
-                <SelectItem key="Pagbabaybay">
-                  Assessment 1: Pagbabaybay
-                </SelectItem>
-                <SelectItem key="Pantig" isDisabled={!assessmentExist["Assessment 1"]}>
-                  Assessment 2: Pantig
-                </SelectItem>
-                <SelectItem key="Salita" isDisabled={!assessmentExist["Assessment 2"]}>
-                  Assessment 3: Salita
-                </SelectItem>
-                <SelectItem key="Pagbabasa" isDisabled={!assessmentExist["Assessment 3"]}>
-                  Assessment 4: Pagbabasa
-                </SelectItem>
+                {assessmentOptions.map(
+                  (option, index) =>
+                    index + 1 <= getMaxAvailableAssessment() && (
+                      <SelectItem key={option.key}>{option.label}</SelectItem>
+                    )
+                )}
               </Select>
 
-              {data.Type === "Pagbabasa" && (
+              {data.Type === "Pagbabasa" ? (
                 <Select
-                  labelPlacement="outside"
                   label="Title"
                   value={data.Title}
                   placeholder="Select a Title:"
                   onChange={(e) => setData({ ...data, Title: e.target.value })}
-                  className="w-full my-2"
                   isInvalid={!!errors.Title}
                   errorMessage={errors.Title}
                 >
@@ -298,21 +244,17 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
                     </SelectItem>
                   ))}
                 </Select>
-              )}
-
-              {data.Type !== "Pagbabasa" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
                   {[...Array(10)].map((_, i) => (
                     <Select
                       key={`Item${i + 1}`}
-                      labelPlacement="outside"
                       label={`Item ${i + 1}`}
                       value={data[`Item${i + 1}`]}
                       placeholder="Select a word:"
                       onChange={(e) =>
                         handleWordChange(`Item${i + 1}`, e.target.value)
                       }
-                      className="w-full my-2"
                       isInvalid={!!errors[`Item${i + 1}`]}
                       errorMessage={errors[`Item${i + 1}`]}
                     >
@@ -326,8 +268,8 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
                 </div>
               )}
             </ModalBody>
-            <ModalFooter className="flex justify-end space-x-2">
-              <Button color="danger" variant="light" onClick={handleClose}>
+            <ModalFooter>
+              <Button color="danger" onClick={handleClose}>
                 Close
               </Button>
               <Button color="primary" type="submit">
