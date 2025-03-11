@@ -85,9 +85,10 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
       .catch((err) => console.log(err));
   };
 
+  // Update the existing assessment API call to include the current teacher's UserID
   const fetchExistingAssessments = () => {
     axios
-      .get(`/api/getAssessments?section=${section}`)
+      .get(`/api/getAssessments?Section=${section}&UserID=${userId}`)
       .then((response) => {
         setExistingAssessments(response.data);
       })
@@ -124,6 +125,8 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
   ];
 
   const getMaxAvailableAssessment = () => {
+    // This ensures that if the teacher already has an assessment,
+    // the next assessment (starting with Assessment 1) will be the next option.
     return existingAssessments.length + 1;
   };
 
