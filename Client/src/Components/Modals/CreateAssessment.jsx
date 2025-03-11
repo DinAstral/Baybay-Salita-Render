@@ -64,8 +64,26 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
     Item9: "",
     Item10: "",
   });
-
   const [errors, setErrors] = useState({});
+
+  // Use your provided functions to fetch words and sentences.
+  const fetchImportWord = () => {
+    axios
+      .get("/api/getImportWord")
+      .then((response) => {
+        setWords(response.data);
+      })
+      .catch((err) => console.log(err));
+  };
+
+  const fetchImportSentence = () => {
+    axios
+      .get("/api/getSentence")
+      .then((response) => {
+        setSentences(response.data);
+      })
+      .catch((err) => console.log(err));
+  };
 
   const fetchExistingAssessments = () => {
     axios
@@ -91,9 +109,9 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
     }
   }, [data.Type, words]);
 
-  const handleWordChange = (itemKey, selectedWord) => {
+  const handleWordChange = (itemKey, selectedValue) => {
     const selectedItem = filteredWords.find(
-      (word) => word.ItemCode === selectedWord
+      (word) => word.ItemCode === selectedValue
     );
     setData({ ...data, [itemKey]: selectedItem ? selectedItem.ItemCode : "" });
   };
@@ -203,28 +221,38 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
                 label="Grading Period"
                 placeholder="Select Grading Period"
                 value={data.Period}
-                onChange={(e) => setData({ ...data, Period: e.target.value })}
+                onChange={(value) => setData({ ...data, Period: value })}
                 isInvalid={!!errors.Period}
                 errorMessage={errors.Period}
               >
-                <SelectItem key="1">Grading Period 1</SelectItem>
-                <SelectItem key="2">Grading Period 2</SelectItem>
-                <SelectItem key="3">Grading Period 3</SelectItem>
-                <SelectItem key="4">Grading Period 4</SelectItem>
+                <SelectItem key="1" value="Grading Period 1">
+                  Grading Period 1
+                </SelectItem>
+                <SelectItem key="2" value="Grading Period 2">
+                  Grading Period 2
+                </SelectItem>
+                <SelectItem key="3" value="Grading Period 3">
+                  Grading Period 3
+                </SelectItem>
+                <SelectItem key="4" value="Grading Period 4">
+                  Grading Period 4
+                </SelectItem>
               </Select>
 
               <Select
                 label="Type of Assessment"
                 placeholder="Select Type of Assessment:"
                 value={data.Type}
-                onChange={(e) => setData({ ...data, Type: e.target.value })}
+                onChange={(value) => setData({ ...data, Type: value })}
                 isInvalid={!!errors.Type}
                 errorMessage={errors.Type}
               >
                 {assessmentOptions.map(
                   (option, index) =>
                     index + 1 <= getMaxAvailableAssessment() && (
-                      <SelectItem key={option.key}>{option.label}</SelectItem>
+                      <SelectItem key={option.key} value={option.key}>
+                        {option.label}
+                      </SelectItem>
                     )
                 )}
               </Select>
@@ -234,7 +262,7 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
                   label="Title"
                   value={data.Title}
                   placeholder="Select a Title:"
-                  onChange={(e) => setData({ ...data, Title: e.target.value })}
+                  onChange={(value) => setData({ ...data, Title: value })}
                   isInvalid={!!errors.Title}
                   errorMessage={errors.Title}
                 >
@@ -252,14 +280,14 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
                       label={`Item ${i + 1}`}
                       value={data[`Item${i + 1}`]}
                       placeholder="Select a word:"
-                      onChange={(e) =>
-                        handleWordChange(`Item${i + 1}`, e.target.value)
+                      onChange={(value) =>
+                        handleWordChange(`Item${i + 1}`, value)
                       }
                       isInvalid={!!errors[`Item${i + 1}`]}
                       errorMessage={errors[`Item${i + 1}`]}
                     >
                       {filteredWords.map((word) => (
-                        <SelectItem key={word.ItemCode} value={word.Word}>
+                        <SelectItem key={word.ItemCode} value={word.ItemCode}>
                           {word.Word}
                         </SelectItem>
                       ))}
@@ -287,6 +315,8 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
 CreateAssessment.propTypes = {
   show: PropTypes.bool.isRequired,
   handleClose: PropTypes.func.isRequired,
+  userId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  section: PropTypes.string.isRequired,
 };
 
 export default CreateAssessment;
