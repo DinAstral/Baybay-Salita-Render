@@ -66,7 +66,6 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
   });
   const [errors, setErrors] = useState({});
 
-  // Use your provided functions to fetch words and sentences.
   const fetchImportWord = () => {
     axios
       .get("/api/getImportWord")
@@ -109,11 +108,10 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
     }
   }, [data.Type, words]);
 
+  // Updated handler: if the onChange returns an array, take its first element.
   const handleWordChange = (itemKey, selectedValue) => {
-    const selectedItem = filteredWords.find(
-      (word) => word.ItemCode === selectedValue
-    );
-    setData({ ...data, [itemKey]: selectedItem ? selectedItem.ItemCode : "" });
+    const value = Array.isArray(selectedValue) ? selectedValue[0] : selectedValue;
+    setData({ ...data, [itemKey]: value });
   };
 
   const assessmentOptions = [
@@ -218,6 +216,7 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
           <form onSubmit={createAct}>
             <ModalBody>
               <Select
+                selectionMode="single"
                 label="Grading Period"
                 placeholder="Select Grading Period"
                 value={data.Period}
@@ -240,6 +239,7 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
               </Select>
 
               <Select
+                selectionMode="single"
                 label="Type of Assessment"
                 placeholder="Select Type of Assessment:"
                 value={data.Type}
@@ -259,6 +259,7 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
 
               {data.Type === "Pagbabasa" ? (
                 <Select
+                  selectionMode="single"
                   label="Title"
                   value={data.Title}
                   placeholder="Select a Title:"
@@ -277,6 +278,7 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
                   {[...Array(10)].map((_, i) => (
                     <Select
                       key={`Item${i + 1}`}
+                      selectionMode="single"
                       label={`Item ${i + 1}`}
                       value={data[`Item${i + 1}`]}
                       placeholder="Select a word:"
