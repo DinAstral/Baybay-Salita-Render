@@ -15,9 +15,10 @@ import {
 
 const CreateSuccess = ({ show, onHide }) => {
   const handleSuccessClick = () => {
-    // Simply close the success modal without reloading the page.
     onHide();
+    window.location.reload(); // Consider updating state instead of reloading.
   };
+
   return (
     <Modal
       isOpen={show}
@@ -48,7 +49,12 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
   const [words, setWords] = useState([]);
   const [sentences, setSentences] = useState([]);
   const [filteredWords, setFilteredWords] = useState([]);
-  const [existingAssessments, setExistingAssessments] = useState([]);
+  const [assessmentExist, setAssessmentExist] = useState({
+    "Assessment 1": false,
+    "Assessment 2": false,
+    "Assessment 3": false,
+    "Assessment 4": false,
+  });
   const [data, setData] = useState({
     Period: "",
     Type: "",
@@ -64,7 +70,32 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
     Item9: "",
     Item10: "",
   });
+
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    fetchAssessments();
+    fetchImportWord();
+    fetchImportSentence();
+  }, []);
+
+  const fetchAssessments = () => {
+    axios
+      .get(`/api/getAssessments`)
+      .then((response) => {
+        const assessments = response.data.filter(
+          (activity) => activity.UserID === userId && activity.Section === section
+        );
+        const assessmentStatus = {
+          "Assessment 1": assessments.some((activity) => activity.Type === "Pagbabaybay"),
+          "Assessment 2": assessments.some((activity) => activity.Type === "Pantig"),
+          "Assessment 3": assessments.some((activity) => activity.Type === "Salita"),
+          "Assessment 4": assessments.some((activity) => activity.Type === "Pagbabasa"),
+        };
+        setAssessmentExist(assessmentStatus);
+      })
+      .catch((err) => console.log(err));
+  };
 
   const fetchImportWord = () => {
     axios
@@ -84,24 +115,8 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
       .catch((err) => console.log(err));
   };
 
-  // Fetch assessments for the given section and user.
-  const fetchExistingAssessments = () => {
-    axios
-      .get(`/api/getAssessments?section=${section}&userId=${userId}`)
-      .then((response) => {
-        setExistingAssessments(response.data);
-      })
-      .catch((err) => console.log(err));
-  };
-
   useEffect(() => {
-    fetchImportWord();
-    fetchImportSentence();
-    fetchExistingAssessments();
-  }, []);
-
-  useEffect(() => {
-    if (data.Type) {
+    if (data.Type && data.Type !== "Pagbabasa") {
       const filtered = words.filter((word) => word.Type === data.Type);
       setFilteredWords(filtered);
     } else {
@@ -109,24 +124,15 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
     }
   }, [data.Type, words]);
 
+  // Handle selection change for word items
   const handleWordChange = (itemKey, selectedWord) => {
     const selectedItem = filteredWords.find(
-      (word) => word.ItemCode === selectedWord
+      (word) => word.Word === selectedWord
     );
-    setData({ ...data, [itemKey]: selectedItem ? selectedItem.ItemCode : "" });
-  };
-
-  // Assessment options defined in sequential order.
-  const assessmentOptions = [
-    { key: "Pagbabaybay", label: "Assessment 1: Pagbabaybay Tunog at Letra" },
-    { key: "Pantig", label: "Assessment 2: Pantig" },
-    { key: "Salita", label: "Assessment 3: Salita" },
-    { key: "Pagbabasa", label: "Assessment 4: Pagbabasa" },
-  ];
-
-  // The next assessment that can be created for this user.
-  const getNextAssessmentNumber = () => {
-    return existingAssessments.length + 1;
+    setData((prevData) => ({
+      ...prevData,
+      [itemKey]: selectedItem ? selectedItem.ItemCode : "",
+    }));
   };
 
   const validateInputs = () => {
@@ -141,16 +147,21 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
       newErrors.Type = "Type of Assessment is required.";
       isValid = false;
     }
+
     if (data.Type === "Pagbabasa" && !data.Title) {
       newErrors.Title = "Title is required for Pagbabasa.";
       isValid = false;
     }
-    for (let i = 1; i <= 10; i++) {
-      if (data.Type !== "Pagbabasa" && !data[`Item${i}`]) {
-        newErrors[`Item${i}`] = `Item ${i} is required.`;
-        isValid = false;
+
+    if (data.Type !== "Pagbabasa") {
+      for (let i = 1; i <= 10; i++) {
+        if (!data[`Item${i}`]) {
+          newErrors[`Item${i}`] = `Item ${i} is required.`;
+          isValid = false;
+        }
       }
     }
+
     setErrors(newErrors);
     return isValid;
   };
@@ -158,20 +169,13 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
   const createAct = async (e) => {
     e.preventDefault();
 
-    // Ensure that the selected assessment matches the next sequential unlocked assessment.
-    const nextAssessment = assessmentOptions[getNextAssessmentNumber() - 1];
-    if (data.Type !== nextAssessment.key) {
-      toast.error("You must create assessments in sequential order.");
-      return;
-    }
-
     if (!validateInputs()) {
       toast.error("Please fill out all required fields.");
       return;
     }
 
     try {
-      const response = await axios.post("/api/submitAssessment", {
+      const response = await axios.post(`/api/submitAssessment`, {
         UserID: userId,
         Section: section,
         Period: data.Period,
@@ -191,8 +195,6 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
       if (response.data.error) {
         toast.error(response.data.error);
       } else {
-        // Re-fetch assessments to unlock the next one.
-        fetchExistingAssessments();
         setData({
           Period: "",
           Type: "",
@@ -220,64 +222,73 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
 
   return (
     <>
-      <Modal isOpen={show} onClose={handleClose} size="4xl">
-        <ModalContent>
-          <ModalHeader>Create New Activity</ModalHeader>
-          <form onSubmit={createAct}>
+      <Modal
+        isOpen={show}
+        onClose={handleClose}
+        size="lg"
+        aria-labelledby="contained-modal-title-vcenter"
+        isDismissable={false}
+        isKeyboardDismissDisabled={true}
+        placement="center"
+        scrollBehavior="inside"
+      >
+        <ModalContent className="w-full md:w-[50vw] max-w-full max-h-[80vh] overflow-y-auto bg-white p-4 rounded-lg">
+          <ModalHeader
+            id="contained-modal-title-vcenter"
+            className="text-lg font-bold"
+          >
+            Create New Activity
+          </ModalHeader>
+          <form onSubmit={createAct} className="space-y-4">
             <ModalBody>
               <Select
+                labelPlacement="outside"
                 label="Grading Period"
                 placeholder="Select Grading Period"
                 value={data.Period}
-                onChange={(e) =>
-                  setData({ ...data, Period: e.target.value })
-                }
+                onChange={(e) => setData({ ...data, Period: e.target.value })}
+                className="w-full my-2"
                 isInvalid={!!errors.Period}
                 errorMessage={errors.Period}
               >
-                <SelectItem key="1" value="Grading Period 1">
-                  Grading Period 1
-                </SelectItem>
-                <SelectItem key="2" value="Grading Period 2">
-                  Grading Period 2
-                </SelectItem>
-                <SelectItem key="3" value="Grading Period 3">
-                  Grading Period 3
-                </SelectItem>
-                <SelectItem key="4" value="Grading Period 4">
-                  Grading Period 4
-                </SelectItem>
+                <SelectItem key="1">Grading Period 1</SelectItem>
+                <SelectItem key="2">Grading Period 2</SelectItem>
+                <SelectItem key="3">Grading Period 3</SelectItem>
+                <SelectItem key="4">Grading Period 4</SelectItem>
               </Select>
 
               <Select
+                labelPlacement="outside"
                 label="Type of Assessment"
-                placeholder="Select Type of Assessment:"
+                placeholder="Select Type of Assessment"
                 value={data.Type}
-                onChange={(e) =>
-                  setData({ ...data, Type: e.target.value })
-                }
+                onChange={(e) => setData({ ...data, Type: e.target.value })}
+                className="w-full my-2"
                 isInvalid={!!errors.Type}
                 errorMessage={errors.Type}
               >
-                {assessmentOptions.map(
-                  (option, index) =>
-                    // Only show the next unlocked assessment for creation.
-                    index + 1 === getNextAssessmentNumber() && (
-                      <SelectItem key={option.key} value={option.key}>
-                        {option.label}
-                      </SelectItem>
-                    )
-                )}
+                <SelectItem key="Pagbabaybay">
+                  Assessment 1: Pagbabaybay
+                </SelectItem>
+                <SelectItem key="Pantig" isDisabled={!assessmentExist["Assessment 1"]}>
+                  Assessment 2: Pantig
+                </SelectItem>
+                <SelectItem key="Salita" isDisabled={!assessmentExist["Assessment 2"]}>
+                  Assessment 3: Salita
+                </SelectItem>
+                <SelectItem key="Pagbabasa" isDisabled={!assessmentExist["Assessment 3"]}>
+                  Assessment 4: Pagbabasa
+                </SelectItem>
               </Select>
 
-              {data.Type === "Pagbabasa" ? (
+              {data.Type === "Pagbabasa" && (
                 <Select
+                  labelPlacement="outside"
                   label="Title"
                   value={data.Title}
                   placeholder="Select a Title:"
-                  onChange={(e) =>
-                    setData({ ...data, Title: e.target.value })
-                  }
+                  onChange={(e) => setData({ ...data, Title: e.target.value })}
+                  className="w-full my-2"
                   isInvalid={!!errors.Title}
                   errorMessage={errors.Title}
                 >
@@ -287,22 +298,26 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
                     </SelectItem>
                   ))}
                 </Select>
-              ) : (
-                <div className="grid grid-cols-2 gap-4">
+              )}
+
+              {data.Type !== "Pagbabasa" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[...Array(10)].map((_, i) => (
                     <Select
                       key={`Item${i + 1}`}
+                      labelPlacement="outside"
                       label={`Item ${i + 1}`}
                       value={data[`Item${i + 1}`]}
                       placeholder="Select a word:"
                       onChange={(e) =>
                         handleWordChange(`Item${i + 1}`, e.target.value)
                       }
+                      className="w-full my-2"
                       isInvalid={!!errors[`Item${i + 1}`]}
                       errorMessage={errors[`Item${i + 1}`]}
                     >
                       {filteredWords.map((word) => (
-                        <SelectItem key={word.ItemCode} value={word.ItemCode}>
+                        <SelectItem key={word.ItemCode} value={word.Word}>
                           {word.Word}
                         </SelectItem>
                       ))}
@@ -311,8 +326,8 @@ const CreateAssessment = ({ show, handleClose, userId, section }) => {
                 </div>
               )}
             </ModalBody>
-            <ModalFooter>
-              <Button color="danger" onClick={handleClose}>
+            <ModalFooter className="flex justify-end space-x-2">
+              <Button color="danger" variant="light" onClick={handleClose}>
                 Close
               </Button>
               <Button color="primary" type="submit">
