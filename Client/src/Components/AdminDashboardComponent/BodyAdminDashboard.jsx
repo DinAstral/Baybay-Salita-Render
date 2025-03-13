@@ -818,7 +818,6 @@ const BodyAdminDashboard = () => {
                 inverse
               />
             </div>
-            s
           </div>
 
           <div className="col-span-1 lg:col-span-3 bg-slate-100 rounded-lg shadow-md p-4 mt-6">
