@@ -306,152 +306,140 @@ const BodyAdminDashboard = () => {
   };
 
   const INCOMPLETE_MESSAGE =
-    'Students with status "Incomplete" have not yet finished their assessments.';
+  'Students with status "Incomplete" have not yet finished their assessments.';
 
-  const generateSectionRecommendations = () => {
-    const recommendations = {};
+const generateSectionRecommendations = () => {
+  const recommendations = {};
 
-    // Define the status types as they appear in the student data.
-    const statusTypes = [
-      "Incomplete",
-      "Low Emerging Reader",
-      "High Emerging Reader",
-      "Developing Reader",
-      "Transitioning Reader",
-      "Grade Level Reader",
-    ];
+  const statusTypes = [
+    "Incomplete",
+    "Low Emerging Reader",
+    "High Emerging Reader",
+    "Developing Reader",
+    "Transitioning Reader",
+    "Grade Level Reader",
+  ];
 
-    // Iterate over each section.
-    for (const section of sections) {
-      // Filter performance records for this section.
-      const sectionPerformances = [];
-      for (const performance of performanceCounts) {
-        const studentData = students.find((s) => s.LRN === performance.LRN);
-        if (studentData && studentData.Section === section) {
-          sectionPerformances.push(performance);
-        }
+  for (const section of sections) {
+    const sectionPerformances = performanceCounts.filter(
+      (p) => students.find((s) => s.LRN === p.LRN)?.Section === section
+    );
+
+    const lowScoreAssessments = {}; // Track low scores per assessment
+    const wordErrorCounts = {}; // Track frequent incorrect words
+    const letterErrorCounts = {}; // Track frequent incorrect letters
+    const statusReasons = Object.fromEntries(statusTypes.map((s) => [s, []]));
+
+    for (const performance of sectionPerformances) {
+      const studentData = students.find((s) => s.LRN === performance.LRN);
+      if (!studentData) continue;
+
+      const studentStatus = studentData.status;
+      const isAssessment1to3 = ["Pagbabaybay", "Pantig", "Salita"].includes(
+        performance.Type
+      );
+      const isAssessment4 = performance.Type === "Pagbabasa";
+
+      // Categorize low scores & classify help needed
+      if (performance.Score <= 4 && isAssessment1to3) {
+        lowScoreAssessments[performance.Type] =
+          (lowScoreAssessments[performance.Type] || 0) + 1;
+        statusReasons[studentStatus].push(
+          `Needs help in learning ${performance.Type} (Score: ${performance.Score})`
+        );
+      } else if (performance.Score <= 2 && isAssessment4) {
+        lowScoreAssessments[performance.Type] =
+          (lowScoreAssessments[performance.Type] || 0) + 1;
+        statusReasons[studentStatus].push(
+          `Needs help in learning ${performance.Type} (Score: ${performance.Score})`
+        );
+      } else if (
+        performance.Score >= 5 &&
+        performance.Score <= 7 &&
+        isAssessment1to3
+      ) {
+        statusReasons[studentStatus].push(
+          `Average performance in ${performance.Type} (Score: ${performance.Score})`
+        );
+      } else if (performance.Score === 3 && isAssessment4) {
+        statusReasons[studentStatus].push(
+          `Average performance in ${performance.Type} (Score: 3)`
+        );
       }
 
-      // Containers to accumulate information.
-      const lowScoreAssessments = {}; // key: assessment type, value: count of low scores
-      const wordErrorCounts = {}; // key: word, value: error count
-      const letterErrorCounts = {}; // key: letter, value: error count
-
-      // Initialize an object to store messages per status.
-      const statusReasons = {};
-      for (const status of statusTypes) {
-        statusReasons[status] = [];
-      }
-
-      // Process each performance record in this section.
-      for (const performance of sectionPerformances) {
-        // Get the student record to obtain the student's status.
-        const studentData = students.find((s) => s.LRN === performance.LRN);
-        if (!studentData) continue;
-        const studentStatus = studentData.status; // Use as stored in the student record
-
-        // Tally low scores if the performance score is less than 5.
-        if (performance.Score < 5) {
-          lowScoreAssessments[performance.Type] =
-            (lowScoreAssessments[performance.Type] || 0) + 1;
-        }
-
-        // Accumulate messages based on the student's status.
-        if (studentStatus === "Incomplete") {
-          statusReasons[studentStatus].push(
-            `The student has not yet finished answering the ${performance.Type} assessment.`
-          );
-        } else if (statusReasons[studentStatus] !== undefined) {
-          statusReasons[studentStatus].push(
-            `Low scores in ${performance.Type} (Score: ${performance.Score})`
-          );
-        }
-
-        // Process performance items to count errors.
-        if (
-          performance.PerformanceItems &&
-          Array.isArray(performance.PerformanceItems)
-        ) {
-          for (const item of performance.PerformanceItems) {
-            if (item.Remarks.toLowerCase() === "incorrect") {
-              // Count word errors (will later filter to words with more than 2 characters).
-              wordErrorCounts[item.Word] =
-                (wordErrorCounts[item.Word] || 0) + 1;
-              // Count letter errors if the word is a single character.
-              if (item.Word.length === 1) {
-                letterErrorCounts[item.Word] =
-                  (letterErrorCounts[item.Word] || 0) + 1;
-              }
+      if (
+        performance.PerformanceItems &&
+        Array.isArray(performance.PerformanceItems)
+      ) {
+        for (const item of performance.PerformanceItems) {
+          if (item?.Remarks?.toLowerCase() === "incorrect") {
+            wordErrorCounts[item.Word] =
+              (wordErrorCounts[item.Word] || 0) + 1;
+            if (item.Word.length === 1) {
+              letterErrorCounts[item.Word] =
+                (letterErrorCounts[item.Word] || 0) + 1;
             }
           }
         }
       }
-
-      // Build a low-score recommendation message if any low scores exist.
-      const lowScoreMsg =
-        Object.keys(lowScoreAssessments).length > 0
-          ? `Consider reviewing concepts in ${Object.keys(
-              lowScoreAssessments
-            ).join(", ")} as scores are low.`
-          : "";
-
-      // Get the top 5 challenging words (only include words with more than 2 characters).
-      const topWords = Object.keys(wordErrorCounts)
-        .filter((word) => word.length > 2)
-        .sort((a, b) => wordErrorCounts[b] - wordErrorCounts[a])
-        .slice(0, 5);
-
-      // Get the top 5 challenging letters (if applicable).
-      const topLetters = Object.keys(letterErrorCounts)
-        .sort((a, b) => letterErrorCounts[b] - letterErrorCounts[a])
-        .slice(0, 5);
-
-      // Build the recommendations array for this section.
-      const sectionRecommendations = [];
-
-      // Iterate over each status type and add recommendations if messages exist.
-      for (const status of statusTypes) {
-        if (statusReasons[status].length > 0) {
-          if (status === "Incomplete") {
-            sectionRecommendations.push(INCOMPLETE_MESSAGE);
-          } else {
-            sectionRecommendations.push(
-              `Students with status "${status}" have the following issues: ${statusReasons[
-                status
-              ].join(", ")}.`
-            );
-          }
-        }
-      }
-
-      // Add the low-score recommendation if available.
-      if (lowScoreMsg) {
-        sectionRecommendations.push(lowScoreMsg);
-      }
-
-      // Add recommendations for challenging words.
-      if (topWords.length > 0) {
-        sectionRecommendations.push(
-          `Students are struggling with the following words: ${topWords.join(
-            ", "
-          )}.`
-        );
-      }
-
-      // Add recommendations for challenging letters.
-      if (topLetters.length > 0) {
-        sectionRecommendations.push(
-          `Students are struggling with the following letters: ${topLetters.join(
-            ", "
-          )}.`
-        );
-      }
-
-      recommendations[section] = sectionRecommendations;
     }
 
-    setSectionRecommendations(recommendations);
-  };
+    // Low-score summary message
+    const lowScoreMsg =
+      Object.keys(lowScoreAssessments).length > 0
+        ? `Students need additional support in: ${Object.keys(
+            lowScoreAssessments
+          ).join(", ")}.`
+        : "";
+
+    // Identify most frequent errors
+    const topWords = Object.keys(wordErrorCounts)
+      .filter((word) => word.length > 2)
+      .sort((a, b) => wordErrorCounts[b] - wordErrorCounts[a])
+      .slice(0, 5);
+    const topLetters = Object.keys(letterErrorCounts)
+      .sort((a, b) => letterErrorCounts[b] - letterErrorCounts[a])
+      .slice(0, 5);
+
+    const sectionRecommendations = [];
+
+    for (const status of statusTypes) {
+      if (statusReasons[status].length > 0) {
+        if (status === "Incomplete") {
+          sectionRecommendations.push(INCOMPLETE_MESSAGE);
+        } else {
+          sectionRecommendations.push(
+            `Students with status "${status}": ${statusReasons[status].join(
+              ", "
+            )}.`
+          );
+        }
+      }
+    }
+
+    if (lowScoreMsg) {
+      sectionRecommendations.push(lowScoreMsg);
+    }
+
+    if (topWords.length > 0) {
+      sectionRecommendations.push(
+        `Common challenging words: ${topWords.join(", ")}.`
+      );
+    }
+
+    if (topLetters.length > 0) {
+      sectionRecommendations.push(
+        `Common challenging letters: ${topLetters.join(", ")}.`
+      );
+    }
+
+    recommendations[section] = sectionRecommendations;
+  }
+
+  setSectionRecommendations(recommendations);
+};
+
+    
 
   // Handle dynamic data based on section selection
   const getChartData = () => {
