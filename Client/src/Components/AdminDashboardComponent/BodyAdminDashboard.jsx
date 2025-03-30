@@ -438,7 +438,6 @@ const generateSectionRecommendations = () => {
 
   setSectionRecommendations(recommendations);
 };
-
     
 
   // Handle dynamic data based on section selection
