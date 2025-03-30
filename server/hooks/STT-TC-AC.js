@@ -170,9 +170,9 @@ const compareAudioFeatures = (features1, features2) => {
 
 // Function to compute Stent Weighted Audio Similarity with NaN handling and scaling to 0-100
 const stentWeightedAudioSimilarity = (mfccDistance, chromaDistance, zcr) => {
-  const weightMfcc = 0.5; // Adjust weights as needed
-  const weightChroma = 0.45;
-  const weightZcr = 0.05;
+  const weightMfcc = 0.7; // Adjust weights as needed
+  const weightChroma = 0.2;
+  const weightZcr = 0.1;
 
   // Calculate the weighted sum
   let similarityScore =

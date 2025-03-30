@@ -111,11 +111,13 @@ const studentStatus = async (req, res) => {
 
     await Student.findByIdAndUpdate(student._id, { status });
 
-    // Additional Analysis: Determine words with frequent incorrect remarks
-    const performanceItems = _.flatMap(performances, "PerformanceItems"); // Flatten PerformanceItems from all performances
+    // Fix: Ensure PerformanceItems exists and is an array before flattening
+    const performanceItems = _.flatMap(performances, (p) => p.PerformanceItems || []);
+
+    // Fix: Safely check Remarks property to prevent errors
     const incorrectRemarks = _.filter(
       performanceItems,
-      (item) => item.Remarks && item.Remarks.toLowerCase() === "incorrect"
+      (item) => item?.Remarks?.toLowerCase() === "incorrect"
     );
 
     const wordErrorAnalysis = _(incorrectRemarks)
