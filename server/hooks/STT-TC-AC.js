@@ -7,7 +7,7 @@ const wav = require("wav-decoder");
 const mongoose = require("mongoose");
 const CompareModel = require("../models/ComparisonResult");
 const AssemblyAI = require("assemblyai");
-const assembly = new AssemblyAI({ apiKey: "3b4f512cbda24b0ab31463b8200b3916" });
+const assembly = new AssemblyAI({ apiKey: process.env.ASSEMBLYAI_API_KEY });
 
 // Function to download and save audio files locally
 const downloadAudio = async (url, filename) => {
