@@ -110,9 +110,9 @@ const stentWeightedAudioSimilarity = (mfcc, chroma, zcr) => {
 const transcribeAudio = async (filePath) => {
   try {
     const formData = new FormData();
-    formData.append("file", fs.createReadStream(filePath)); // ✅ Correct key
-    formData.append("model_id", "eleven_multilingual_v1");
-    formData.append("language", "fil");
+    formData.append("file", fs.createReadStream(filePath));
+    formData.append("model_id", "scribe_v1"); // 🔄 Updated
+    formData.append("language", "fil");        // ✅ Optional, safe to keep
 
     const response = await axios.post("https://api.elevenlabs.io/v1/speech-to-text", formData, {
       headers: {
@@ -125,7 +125,7 @@ const transcribeAudio = async (filePath) => {
     console.log("📄 STT Transcript:", transcript);
     return transcript;
   } catch (error) {
-    console.error("Error in STT:", error.response?.data || error.message);
+    console.error("❌ Error in STT:", error.response?.data || error.message);
     return null;
   }
 };
