@@ -106,31 +106,47 @@ const stentWeightedAudioSimilarity = (mfcc, chroma, zcr) => {
   return 0.4 * mfcc + 0.3 * chroma + 0.3 * zcr;
 };
 
-// 🔥 ElevenLabs STT Integration
+// ElevenLabs STT Integration
 const transcribeAudio = async (filePath) => {
   try {
     const formData = new FormData();
     formData.append("file", fs.createReadStream(filePath));
-    formData.append("model_id", "scribe_v1"); // 🔄 Updated
-    formData.append("language", "fil");        // ✅ Optional, safe to keep
+    formData.append("model_id", "scribe_v1");           // required
+    formData.append("language_code", "fil");            // Filipino, properly specified
 
-    const response = await axios.post("https://api.elevenlabs.io/v1/speech-to-text", formData, {
-      headers: {
-        "xi-api-key": process.env.ELEVENLABS_API_KEY,
-        ...formData.getHeaders(),
-      },
-    });
+    const response = await axios.post(
+      "https://api.elevenlabs.io/v1/speech-to-text",
+      formData,
+      {
+        headers: {
+          "xi-api-key": process.env.ELEVENLABS_API_KEY,
+          ...formData.getHeaders(),
+        },
+        validateStatus: () => true,
+      }
+    );
 
     const transcript = response.data?.text?.trim();
-    console.log("📄 STT Transcript:", transcript);
+
+    const isJunk = !transcript ||
+      /\[.*(noise|music|glitch).*]/i.test(transcript) ||
+      transcript.length < 2;
+
+    if (isJunk) {
+      console.log("Junk transcript or non-speech detected:", transcript);
+      return null;
+    }
+
+    console.log("STT Transcript:", transcript);
     return transcript;
   } catch (error) {
-    console.error("❌ Error in STT:", error.response?.data || error.message);
+    console.error("Error in STT:", error.response?.data || error.message);
     return null;
   }
 };
 
-// 🎯 Core Function
+
+// Core Function
 const run = async (defaultAudioUrl, userAudioUrl) => {
   const audioFile1 = "audio1.wav";
   const audioFile2 = "audio2.wav";
