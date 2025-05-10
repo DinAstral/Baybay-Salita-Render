@@ -157,6 +157,7 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
     await downloadAudio(defaultAudioUrl, audioFile1);
     await downloadAudio(userAudioUrl, audioFile2);
 
+    // Noise reduction
     await new Promise((resolve, reject) => {
       ffmpeg(audioFile2)
         .output(noiseSuppressedAudio)
@@ -166,11 +167,29 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
         .run();
     });
 
+    // ✅ extract features BEFORE transcribing
+    const features2 = await extractAudioFeatures(noiseSuppressedAudio);
+    const isSilent = detectSilentOrLowVoiceAudio(features2);
+
+    if (isSilent) {
+      console.log("🚫 Audio detected as silent/low voice. Skipping transcription.");
+      return {
+        audioComparison: {
+          mfccDistance: Infinity,
+          chromaDistance: Infinity,
+          zcr: Infinity,
+        },
+        weightedSimilarity: 0,
+        transcript: null,
+      };
+    }
+
+    // ✅ only transcribe if not silent
     const transcript = await transcribeAudio(noiseSuppressedAudio);
     console.log("🎤 Final Transcript Output for logs:", transcript);
 
     if (!transcript || transcript.length < 2) {
-      console.log("No valid speech detected in user audio.");
+      console.log("🚫 Invalid or empty transcript.");
       return {
         audioComparison: {
           mfccDistance: Infinity,
@@ -183,21 +202,8 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
     }
 
     const features1 = await extractAudioFeatures(audioFile1);
-    const features2 = await extractAudioFeatures(noiseSuppressedAudio);
     deleteFileIfExists(audioFile2);
     deleteFileIfExists(noiseSuppressedAudio);
-
-    if (detectSilentOrLowVoiceAudio(features2)) {
-      return {
-        audioComparison: {
-          mfccDistance: Infinity,
-          chromaDistance: Infinity,
-          zcr: Infinity,
-        },
-        weightedSimilarity: 0,
-        transcript,
-      };
-    }
 
     const audioComparison = compareAudioFeatures(features1, features2);
     const weightedSimilarity = stentWeightedAudioSimilarity(
