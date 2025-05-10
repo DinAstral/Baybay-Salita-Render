@@ -38,7 +38,6 @@ const detectSilentOrLowVoiceAudio = (features) => {
   const energyThreshold = 0.03;
   const avgZCR = features.zcr.reduce((a, b) => a + b, 0) / features.zcr.length;
   const avgEnergy = features.energy || 0;
-
   return avgZCR < zcrThreshold && avgEnergy < energyThreshold;
 };
 
@@ -128,13 +127,15 @@ const transcribeAudio = async (filePath) => {
 
     const transcript = response.data?.text?.trim();
 
+    const junkRegex = /[\[(](.*?(noise|music|glitch|intro).*?)[\])]/i;
+
     const isJunk =
       !transcript ||
-      /\[.*(noise|music|glitch).*]/i.test(transcript) ||
+      junkRegex.test(transcript) ||
       transcript.length < 2;
 
     if (isJunk) {
-      console.log("Junk transcript or non-speech detected:", transcript);
+      console.log("🚫 Invalid transcript detected (non-speech or junk):", transcript);
       return null;
     }
 
@@ -166,11 +167,10 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
     });
 
     const transcript = await transcribeAudio(noiseSuppressedAudio);
-
-    console.log("Final Transcript Output for logs:", transcript);
+    console.log("🎤 Final Transcript Output for logs:", transcript);
 
     if (!transcript || transcript.length < 2) {
-      console.log("No speech detected in user audio.");
+      console.log("No valid speech detected in user audio.");
       return {
         audioComparison: {
           mfccDistance: Infinity,
@@ -219,7 +219,7 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
         chromaDistance: Infinity,
         zcr: Infinity,
       },
-      weightedSimilarity: 100,
+      weightedSimilarity: 0,
       transcript: null,
     };
   }
@@ -233,7 +233,7 @@ const runComparisonAndSaveResult = async (
   Type,
   fileUrls,
   defaultAudios,
-  similarityThreshold = 25
+  similarityThreshold = 20
 ) => {
   try {
     const comparisonResults = [];
@@ -244,7 +244,7 @@ const runComparisonAndSaveResult = async (
       const defaultAudioUrl = defaultAudios[i];
 
       const result = await run(defaultAudioUrl, userAudioUrl);
-      const isCorrect = result.weightedSimilarity <= similarityThreshold;
+      const isCorrect = result.weightedSimilarity >= similarityThreshold;
       if (isCorrect) totalScore += 1;
 
       comparisonResults.push({
@@ -257,7 +257,7 @@ const runComparisonAndSaveResult = async (
         Remarks: isCorrect ? "Correct" : "Incorrect",
       });
 
-      console.log(`Completed comparison for Item ${i + 1}:`, {
+      console.log(`✅ Completed comparison for Item ${i + 1}:`, {
         ItemCode: `Itemcode${i + 1}`,
         ...result.audioComparison,
         weightedSimilarity: result.weightedSimilarity,
