@@ -177,7 +177,7 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
           chromaDistance: Infinity,
           zcr: Infinity,
         },
-        weightedSimilarity: 100,
+        weightedSimilarity: 0,
         transcript,
       };
     }
@@ -194,7 +194,7 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
           chromaDistance: Infinity,
           zcr: Infinity,
         },
-        weightedSimilarity: 100,
+        weightedSimilarity: 0,
         transcript,
       };
     }
