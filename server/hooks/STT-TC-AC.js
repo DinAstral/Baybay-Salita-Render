@@ -103,7 +103,7 @@ const compareAudioFeatures = (features1, features2) => {
 };
 
 const stentWeightedAudioSimilarity = (mfcc, chroma, zcr) => {
-  return 0.4 * mfcc + 0.3 * chroma + 0.3 * zcr;
+  return 0.6 * mfcc + 0.1 * chroma + 0.3 * zcr;
 };
 
 // ElevenLabs STT Integration
@@ -111,8 +111,8 @@ const transcribeAudio = async (filePath) => {
   try {
     const formData = new FormData();
     formData.append("file", fs.createReadStream(filePath));
-    formData.append("model_id", "scribe_v1");           // required
-    formData.append("language_code", "fil");            // Filipino, properly specified
+    formData.append("model_id", "scribe_v1");
+    formData.append("language_code", "fil");
 
     const response = await axios.post(
       "https://api.elevenlabs.io/v1/speech-to-text",
@@ -128,7 +128,8 @@ const transcribeAudio = async (filePath) => {
 
     const transcript = response.data?.text?.trim();
 
-    const isJunk = !transcript ||
+    const isJunk =
+      !transcript ||
       /\[.*(noise|music|glitch).*]/i.test(transcript) ||
       transcript.length < 2;
 
@@ -145,7 +146,6 @@ const transcribeAudio = async (filePath) => {
   }
 };
 
-
 // Core Function
 const run = async (defaultAudioUrl, userAudioUrl) => {
   const audioFile1 = "audio1.wav";
@@ -156,7 +156,6 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
     await downloadAudio(defaultAudioUrl, audioFile1);
     await downloadAudio(userAudioUrl, audioFile2);
 
-    // Noise reduction
     await new Promise((resolve, reject) => {
       ffmpeg(audioFile2)
         .output(noiseSuppressedAudio)
@@ -166,8 +165,10 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
         .run();
     });
 
-    // 🔍 STT speech check (before acoustic comparison)
     const transcript = await transcribeAudio(noiseSuppressedAudio);
+
+    console.log("Final Transcript Output for logs:", transcript);
+
     if (!transcript || transcript.length < 2) {
       console.log("No speech detected in user audio.");
       return {
@@ -177,6 +178,7 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
           zcr: Infinity,
         },
         weightedSimilarity: 100,
+        transcript,
       };
     }
 
@@ -193,6 +195,7 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
           zcr: Infinity,
         },
         weightedSimilarity: 100,
+        transcript,
       };
     }
 
@@ -206,6 +209,7 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
     return {
       audioComparison,
       weightedSimilarity,
+      transcript,
     };
   } catch (err) {
     console.error("💥 Error during comparison:", err.message);
@@ -216,6 +220,7 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
         zcr: Infinity,
       },
       weightedSimilarity: 100,
+      transcript: null,
     };
   }
 };
@@ -228,7 +233,7 @@ const runComparisonAndSaveResult = async (
   Type,
   fileUrls,
   defaultAudios,
-  similarityThreshold = 20
+  similarityThreshold = 25
 ) => {
   try {
     const comparisonResults = [];
@@ -248,7 +253,15 @@ const runComparisonAndSaveResult = async (
         chromaDistance: result.audioComparison.chromaDistance,
         zcr: result.audioComparison.zcr,
         stentWeightedSimilarity: result.weightedSimilarity,
+        Transcript: result.transcript,
         Remarks: isCorrect ? "Correct" : "Incorrect",
+      });
+
+      console.log(`Completed comparison for Item ${i + 1}:`, {
+        ItemCode: `Itemcode${i + 1}`,
+        ...result.audioComparison,
+        weightedSimilarity: result.weightedSimilarity,
+        transcript: result.transcript,
       });
     }
 
