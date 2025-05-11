@@ -127,7 +127,7 @@ const transcribeAudio = async (filePath) => {
 
     const transcript = response.data?.text?.trim();
 
-    const junkRegex = /[\[(](.*?(noise|music|glitch|intro).*?)[\])]/i;
+    const junkRegex = /[\[(](.*?(noise|music|glitch|intro|birds chirping|Sound effect|nokno).*?)[\])]/i;
 
     const isJunk =
       !transcript ||
