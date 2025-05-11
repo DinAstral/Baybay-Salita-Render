@@ -250,7 +250,7 @@ const runComparisonAndSaveResult = async (
       const defaultAudioUrl = defaultAudios[i];
 
       const result = await run(defaultAudioUrl, userAudioUrl);
-      const isCorrect = result.weightedSimilarity >= similarityThreshold;
+      const isCorrect = result.weightedSimilarity <= similarityThreshold;
       if (isCorrect) totalScore += 1;
 
       comparisonResults.push({
