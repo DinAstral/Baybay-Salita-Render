@@ -188,7 +188,7 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
     const transcript = await transcribeAudio(noiseSuppressedAudio);
     console.log("🎤 Final Transcript Output for logs:", transcript);
 
-    if (!transcript || transcript.length < 2) {
+    if (!transcript || transcript.length < 3) {
       console.log("🚫 Invalid or empty transcript.");
       return {
         audioComparison: {
