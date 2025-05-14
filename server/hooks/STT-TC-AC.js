@@ -127,10 +127,10 @@ const transcribeAudio = async (filePath) => {
 
     const transcript = response.data?.text?.trim();
 
-    const junkRegex = /[\[(](.*?(noise|music|glitch|intro|birds chirping|Sound effect|nokno).*?)[\])]/i;
+    const junkRegex = /[\[(](.*?(noise|music|glitch|intro|birds chirping|Sound effect|nokno|Sound|effect|chirping|birds|Introduccion|.).*?)[\])]/i;
 
     const isJunk =
-      !transcript ||
+      !transcript || "Sound effect" ||
       junkRegex.test(transcript) ||
       transcript.length < 2;
 
