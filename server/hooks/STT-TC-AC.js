@@ -102,7 +102,7 @@ const compareAudioFeatures = (features1, features2) => {
 };
 
 const stentWeightedAudioSimilarity = (mfcc, chroma, zcr) => {
-  return 0.4 * mfcc + 0.3 * chroma + 0.3 * zcr;
+  return 0.5 * mfcc + 0.1 * chroma + 0.4 * zcr;
 };
 
 const transcribeAudio = async (filePath) => {
@@ -253,7 +253,7 @@ const runComparisonAndSaveResult = async (
   Type,
   fileUrls,
   defaultAudios,
-  similarityThreshold = 40
+  similarityThreshold = 50
 ) => {
   try {
     const comparisonResults = [];
