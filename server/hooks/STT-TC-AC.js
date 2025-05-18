@@ -105,7 +105,6 @@ const stentWeightedAudioSimilarity = (mfcc, chroma, zcr) => {
   return 0.6 * mfcc + 0.1 * chroma + 0.3 * zcr;
 };
 
-// ElevenLabs STT Integration
 const transcribeAudio = async (filePath) => {
   try {
     const formData = new FormData();
@@ -125,21 +124,42 @@ const transcribeAudio = async (filePath) => {
       }
     );
 
-    const transcript = response.data?.text?.trim();
-
-    const junkRegex = /[\[(](.*?(noise|music|glitch|intro|birds chirping|Sound effect|nokno|Sound|effect|chirping|birds|Introduccion|.).*?)[\])]/i;
-
-    const isJunk =
-      !transcript || "Sound effect" ||
-      junkRegex.test(transcript) ||
-      transcript.length < 2;
-
-    if (isJunk) {
-      console.log("🚫 Invalid transcript detected (non-speech or junk):", transcript);
+    let transcript = response.data?.text?.trim();
+    if (!transcript || transcript.length < 2) {
+      console.log("🚫 Transcript is empty or too short:", transcript);
       return null;
     }
 
-    console.log("STT Transcript:", transcript);
+    const normalizedTranscript = transcript.toLowerCase().trim();
+
+    const allowedTerms = [
+      "a", "b", "d", "e", "g", "h", "i", "k", "l", "m", "n", "ng", "o", "p", "r", "s", "t", "u", "w", "y",
+      "ba", "bi", "bo", "bu", "ka", "ke", "ki", "ko", "ku", "da", "de", "di", "do", "du",
+      "ga", "ge", "gi", "go", "gu", "ha", "he", "hi", "ho", "hu", "la", "le", "li", "lo", "lu",
+      "ma", "me", "mi", "mo", "mu", "na", "ne", "ni", "no", "nu", "nga", "nge", "ngi", "ngo", "ngu",
+      "pa", "pe", "pi", "po", "pu", "ra", "re", "ri", "ro", "ru", "sa", "se", "si", "so", "su",
+      "ta", "te", "ti", "to", "tu", "wa", "we", "wi", "wo", "wu", "ya", "ye", "yi", "yo", "yu",
+      "apa", "buhok", "buhuk", "bohok", "bulaklak", "bolaklak", "daliri", "kama", "kamay", "kuko", "koko", "kuku",
+      "labi", "labe", "malakas", "bola", "bula", "aklat", "upuan", "lamesa", "lamisa", "ate", "baso", "bata",
+      "bibe", "bebe", "bibi", "bote", "bute", "buko", "boko", "buku", "daga", "dila", "dela", "dugo", "dogo",
+      "dugu", "keso", "kuya", "koya", "lobo", "lubo", "lubu", "lola", "lula", "lolo", "lulo", "lulu", "lolu",
+      "mama", "mata", "misa", "mesa", "paa", "papa", "puso", "relo", "siko", "seko", "seku", "siku", "tasa",
+      "toro", "toru", "turo", "turu", "ulo", "olu", "ulu", "olo", "butiki", "botiki", "buteki", "buteke",
+      "daliri", "dalere", "dalire", "daleri", "gitara", "getara", "lababo", "lababu", "modelo", "mudelu",
+      "modilo", "mudilu", "musika", "mosika", "museka", "moseka", "payaso", "payasu", "pisara", "pesara",
+      "raketa", "rakita", "regalo", "rigalo", "salapi", "salape"
+    ];
+
+    const isValid =
+      allowedTerms.includes(normalizedTranscript) ||
+      normalizedTranscript.endsWith('.');
+
+    if (!isValid) {
+      console.log("🚫 Transcript not in allowed terms:", transcript);
+      return null;
+    }
+
+    console.log("✅ Valid Transcript:", transcript);
     return transcript;
   } catch (error) {
     console.error("Error in STT:", error.response?.data || error.message);
@@ -147,7 +167,6 @@ const transcribeAudio = async (filePath) => {
   }
 };
 
-// Core Function
 const run = async (defaultAudioUrl, userAudioUrl) => {
   const audioFile1 = "audio1.wav";
   const audioFile2 = "audio2.wav";
@@ -157,7 +176,6 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
     await downloadAudio(defaultAudioUrl, audioFile1);
     await downloadAudio(userAudioUrl, audioFile2);
 
-    // Noise reduction
     await new Promise((resolve, reject) => {
       ffmpeg(audioFile2)
         .output(noiseSuppressedAudio)
@@ -167,12 +185,11 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
         .run();
     });
 
-    // ✅ extract features BEFORE transcribing
     const features2 = await extractAudioFeatures(noiseSuppressedAudio);
     const isSilent = detectSilentOrLowVoiceAudio(features2);
 
     if (isSilent) {
-      console.log("🚫 Audio detected as silent/low voice. Skipping transcription.");
+      console.log("🚫 Silent/low voice detected.");
       return {
         audioComparison: {
           mfccDistance: Infinity,
@@ -184,12 +201,10 @@ const run = async (defaultAudioUrl, userAudioUrl) => {
       };
     }
 
-    // ✅ only transcribe if not silent
     const transcript = await transcribeAudio(noiseSuppressedAudio);
     console.log("🎤 Final Transcript Output for logs:", transcript);
 
-    if (!transcript || transcript.length < 3) {
-      console.log("🚫 Invalid or empty transcript.");
+    if (!transcript) {
       return {
         audioComparison: {
           mfccDistance: Infinity,
