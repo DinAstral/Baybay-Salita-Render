@@ -102,7 +102,7 @@ const compareAudioFeatures = (features1, features2) => {
 };
 
 const stentWeightedAudioSimilarity = (mfcc, chroma, zcr) => {
-  return 0.6 * mfcc + 0.1 * chroma + 0.3 * zcr;
+  return 0.4 * mfcc + 0.3 * chroma + 0.3 * zcr;
 };
 
 const transcribeAudio = async (filePath) => {
@@ -131,6 +131,7 @@ const transcribeAudio = async (filePath) => {
     }
 
     const normalizedTranscript = transcript.toLowerCase().trim();
+    const cleanedTranscript = normalizedTranscript.replace(/[.!?]$/, '');
 
     const allowedTerms = [
       "a", "b", "d", "e", "g", "h", "i", "k", "l", "m", "n", "ng", "o", "p", "r", "s", "t", "u", "w", "y",
@@ -150,9 +151,7 @@ const transcribeAudio = async (filePath) => {
       "raketa", "rakita", "regalo", "rigalo", "salapi", "salape"
     ];
 
-    const isValid =
-      allowedTerms.includes(normalizedTranscript) ||
-      normalizedTranscript.endsWith('.');
+    const isValid = allowedTerms.includes(cleanedTranscript);
 
     if (!isValid) {
       console.log("🚫 Transcript not in allowed terms:", transcript);
@@ -254,7 +253,7 @@ const runComparisonAndSaveResult = async (
   Type,
   fileUrls,
   defaultAudios,
-  similarityThreshold = 20
+  similarityThreshold = 40
 ) => {
   try {
     const comparisonResults = [];
@@ -268,7 +267,7 @@ const runComparisonAndSaveResult = async (
       const isCorrect = result.weightedSimilarity <= similarityThreshold;
       if (isCorrect) totalScore += 1;
 
-      comparisonResults.push({
+      const resultObject = {
         ItemCode: `Itemcode${i + 1}`,
         mfccDistance: result.audioComparison.mfccDistance,
         chromaDistance: result.audioComparison.chromaDistance,
@@ -276,14 +275,11 @@ const runComparisonAndSaveResult = async (
         stentWeightedSimilarity: result.weightedSimilarity,
         Transcript: result.transcript,
         Remarks: isCorrect ? "Correct" : "Incorrect",
-      });
+      };
 
-      console.log(`✅ Completed comparison for Item ${i + 1}:`, {
-        ItemCode: `Itemcode${i + 1}`,
-        ...result.audioComparison,
-        weightedSimilarity: result.weightedSimilarity,
-        transcript: result.transcript,
-      });
+      console.log(`✅ Completed comparison for Item ${i + 1}:`, resultObject);
+
+      comparisonResults.push(resultObject);
     }
 
     await CompareModel.create({
@@ -293,6 +289,11 @@ const runComparisonAndSaveResult = async (
       Section,
       Type,
       Results: comparisonResults,
+    });
+
+    console.log("📝 Final Results Summary:", {
+      score: totalScore,
+      resultsWithRemarks: comparisonResults,
     });
 
     return { score: totalScore, resultsWithRemarks: comparisonResults };
